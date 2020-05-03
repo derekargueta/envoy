@@ -1,6 +1,6 @@
 #pragma once
 
-#include <http_parser.h>
+#include <llhttp.h>
 
 #include <array>
 #include <cstdint>
@@ -167,7 +167,7 @@ private:
 
 /**
  * Base class for HTTP/1.1 client and server connections.
- * Handles the callbacks of http_parser with its own base routine and then
+ * Handles the callbacks of llhttp with its own base routine and then
  * virtual dispatches to its subclasses.
  */
 class ConnectionImpl : public virtual Connection, protected Logger::Loggable<Logger::Id::http> {
@@ -233,7 +233,7 @@ public:
 
 protected:
   ConnectionImpl(Network::Connection& connection, CodecStats& stats, const Http1Settings& settings,
-                 http_parser_type type, uint32_t max_headers_kb, const uint32_t max_headers_count,
+                 llhttp_type_t type, uint32_t max_headers_kb, const uint32_t max_headers_count,
                  HeaderKeyFormatterPtr&& header_key_formatter);
 
   // The following define special return values for http_parser callbacks. See:
@@ -274,7 +274,7 @@ protected:
   Network::Connection& connection_;
   CodecStats& stats_;
   const Http1Settings codec_settings_;
-  http_parser parser_;
+  llhttp_t parser_;
   Buffer::Instance* current_dispatching_buffer_{};
   Http::Code error_code_{Http::Code::BadRequest};
   const HeaderKeyFormatterPtr header_key_formatter_;
@@ -283,6 +283,7 @@ protected:
   bool processing_trailers_ : 1;
   bool handling_upgrade_ : 1;
   bool reset_stream_called_ : 1;
+  bool seen_content_length_ : 1;
   // Deferred end stream headers indicate that we are not going to raise headers until the full
   // HTTP/1 message has been flushed from the parser. This allows raising an HTTP/2 style headers
   // block with end stream set to true with no further protocol data remaining.
@@ -441,7 +442,7 @@ private:
    */
   virtual Status checkHeaderNameForUnderscores() { return okStatus(); }
 
-  static http_parser_settings settings_;
+  static llhttp_settings_s settings_;
 
   HeaderParsingState header_parsing_state_{HeaderParsingState::Field};
   // Used to accumulate the HTTP message body during the current dispatch call. The accumulated body
@@ -533,8 +534,6 @@ private:
       headers_or_trailers_.emplace<RequestTrailerMapPtr>(RequestTrailerMapImpl::create());
     }
   }
-
-  void sendProtocolErrorOld(absl::string_view details);
 
   void releaseOutboundResponse(const Buffer::OwnedBufferFragmentImpl* fragment);
   void maybeAddSentinelBufferFragment(Buffer::Instance& output_buffer) override;
@@ -634,7 +633,7 @@ private:
   // to null headers on message complete for assertion purposes.
   absl::variant<ResponseHeaderMapPtr, ResponseTrailerMapPtr> headers_or_trailers_;
 
-  // The default limit of 80 KiB is the vanilla http_parser behaviour.
+  // The default limit of 80 KiB is the vanilla llhttp behaviour.
   static constexpr uint32_t MAX_RESPONSE_HEADERS_KB = 80;
 };
 
