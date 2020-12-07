@@ -77,3 +77,21 @@ envoy_cc_library(
         "//source/common/upstream:upstream_lib",
     ],
 )
+
+envoy_cc_library(
+    name = "parser_interface",
+    hdrs = ["parser.h"],
+)
+
+envoy_cc_library(
+    name = "legacy_http_parser_lib",
+    srcs = ["legacy_http_parser.cc"],
+    hdrs = ["legacy_http_parser.h"],
+    external_deps = [
+        "http_parser",
+    ],
+    deps = [
+        ":parser_interface",
+        "//source/common/common:assert_lib",
+    ],
+)
