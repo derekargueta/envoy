@@ -374,7 +374,8 @@ private:
    * @param data supplies the start address.
    * @param length supplies the length.
    */
-  virtual Status onUrl(const char* data, size_t length) PURE;
+  virtual int onUrl(const char* data, size_t length) PURE;
+  virtual Status onUrlStatus(const char* data, size_t length) PURE;
 
   /**
    * Called when header field data is received.
@@ -526,7 +527,8 @@ private:
   // ConnectionImpl
   void onEncodeComplete() override;
   Status onMessageBegin() override;
-  Status onUrl(const char* data, size_t length) override;
+  int onUrl(const char* data, size_t length) override;
+  Status onUrlStatus(const char* data, size_t length) override;
   Envoy::StatusOr<HttpParserCode> onHeadersComplete() override;
   // If upgrade behavior is not allowed, the HCM will have sanitized the headers out.
   bool upgradeAllowed() const override { return true; }
@@ -609,8 +611,14 @@ private:
   Http::Status dispatch(Buffer::Instance& data) override;
   void onEncodeComplete() override {}
   Status onMessageBegin() override { return okStatus(); }
+<<<<<<< HEAD
   Status onUrl(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
   Envoy::StatusOr<HttpParserCode> onHeadersComplete() override;
+=======
+  int onUrl(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
+  Status onUrlStatus(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
+  Envoy::StatusOr<int> onHeadersComplete() override;
+>>>>>>> 1355b702b (refactor onUrl non-legacy)
   bool upgradeAllowed() const override;
   void onBody(Buffer::Instance& data) override;
   void onMessageComplete() override;

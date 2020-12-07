@@ -439,9 +439,7 @@ http_parser_settings ConnectionImpl::settings_{
       return conn_impl->setAndCheckCallbackStatus(std::move(status));
     },
     [](http_parser* parser, const char* at, size_t length) -> int {
-      auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
-      auto status = conn_impl->onUrl(at, length);
-      return conn_impl->setAndCheckCallbackStatus(std::move(status));
+      return static_cast<ConnectionImpl*>(parser->data)->onUrl(at, length);
     },
     nullptr, // on_status
     [](http_parser* parser, const char* at, size_t length) -> int {
@@ -1122,12 +1120,18 @@ Status ServerConnectionImpl::onMessageBegin() {
   return okStatus();
 }
 
-Status ServerConnectionImpl::onUrl(const char* data, size_t length) {
+int ServerConnectionImpl::onUrl(const char* data, size_t length) {
+  auto status = onUrlStatus(data, length);
+  return setAndCheckCallbackStatus(std::move(status));
+}
+
+Status ServerConnectionImpl::onUrlStatus(const char* data, size_t length) {
   if (active_request_.has_value()) {
     active_request_.value().request_url_.append(data, length);
 
     RETURN_IF_ERROR(checkMaxHeadersSize());
   }
+
   return okStatus();
 }
 
