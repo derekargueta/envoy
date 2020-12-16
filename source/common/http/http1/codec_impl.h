@@ -428,8 +428,9 @@ private:
    * Called when the request/response is complete.
    * @return A status representing success.
    */
-  Status onMessageCompleteBase();
-  virtual void onMessageComplete() PURE;
+  int onMessageComplete();
+  Status onMessageCompleteBaseStatus();
+  virtual void onMessageCompleteBase() PURE;
 
   /**
    * Called when accepting a chunk header.
@@ -513,7 +514,7 @@ protected:
   };
   absl::optional<ActiveRequest>& activeRequest() { return active_request_; }
   // ConnectionImpl
-  void onMessageComplete() override;
+  void onMessageCompleteBase() override;
   // Add the size of the request_url to the reported header size when processing request headers.
   uint32_t getHeadersSize() override;
 
@@ -621,7 +622,7 @@ private:
   Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() override;
   bool upgradeAllowed() const override;
   void onBody(Buffer::Instance& data) override;
-  void onMessageComplete() override;
+  void onMessageCompleteBase() override;
   void onResetStream(StreamResetReason reason) override;
   Status sendProtocolError(absl::string_view details) override;
   void onAboveHighWatermark() override;
