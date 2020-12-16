@@ -435,7 +435,7 @@ private:
   /**
    * Called when accepting a chunk header.
    */
-  void onChunkHeader(bool is_final_chunk);
+  int onChunkHeader(bool is_final_chunk);
 
   /**
    * @see onResetStreamBase().

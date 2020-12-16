@@ -467,8 +467,7 @@ http_parser_settings ConnectionImpl::settings_{
       // parser->content_length. See
       // https://github.com/nodejs/http-parser/blob/v2.9.3/http_parser.h#L336
       const bool is_final_chunk = (parser->content_length == 0);
-      static_cast<ConnectionImpl*>(parser->data)->onChunkHeader(is_final_chunk);
-      return 0;
+      return static_cast<ConnectionImpl*>(parser->data)->onChunkHeader(is_final_chunk);
     },
     nullptr // on_chunk_complete
 };
@@ -828,12 +827,14 @@ void ConnectionImpl::dispatchBufferedBody() {
   }
 }
 
-void ConnectionImpl::onChunkHeader(bool is_final_chunk) {
+int ConnectionImpl::onChunkHeader(bool is_final_chunk) {
   if (is_final_chunk) {
     // Dispatch body before parsing trailers, so body ends up dispatched even if an error is found
     // while processing trailers.
     dispatchBufferedBody();
   }
+
+  return 0;
 }
 
 Status ConnectionImpl::onMessageCompleteBaseStatus() {
