@@ -313,6 +313,12 @@ void ConnectionImpl::copyToBuffer(const char* data, uint64_t length) {
   output_buffer_->add(data, length);
 }
 
+int ConnectionImpl::onMessageBegin() {
+  onMessageBeginBase();
+  auto status = onMessageBeginStatus();
+  return setAndCheckCallbackStatus(std::move(status));
+}
+
 void StreamEncoderImpl::resetStream(StreamResetReason reason) {
   connection_.onResetStreamBase(reason);
 }
@@ -422,23 +428,17 @@ int ConnectionImpl::setAndCheckCallbackStatusOr(Envoy::StatusOr<int>&& statusor)
 
 http_parser_settings ConnectionImpl::settings_{
     [](http_parser* parser) -> int {
-      auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
-      auto status = conn_impl->onMessageBeginBase();
-      return conn_impl->setAndCheckCallbackStatus(std::move(status));
+      return static_cast<ConnectionImpl*>(parser->data)->onMessageBegin();
     },
     [](http_parser* parser, const char* at, size_t length) -> int {
       return static_cast<ConnectionImpl*>(parser->data)->onUrl(at, length);
     },
     nullptr, // on_status
     [](http_parser* parser, const char* at, size_t length) -> int {
-      auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
-      auto status = conn_impl->onHeaderField(at, length);
-      return conn_impl->setAndCheckCallbackStatus(std::move(status));
+      return static_cast<ConnectionImpl*>(parser->data)->onHeaderField(at, length);
     },
     [](http_parser* parser, const char* at, size_t length) -> int {
-      auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
-      auto status = conn_impl->onHeaderValue(at, length);
-      return conn_impl->setAndCheckCallbackStatus(std::move(status));
+      return static_cast<ConnectionImpl*>(parser->data)->onHeaderValue(at, length);
     },
     [](http_parser* parser) -> int {
       auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
@@ -446,8 +446,7 @@ http_parser_settings ConnectionImpl::settings_{
       return conn_impl->setAndCheckCallbackStatusOr(std::move(statusor));
     },
     [](http_parser* parser, const char* at, size_t length) -> int {
-      static_cast<ConnectionImpl*>(parser->data)->bufferBody(at, length);
-      return 0;
+      return static_cast<ConnectionImpl*>(parser->data)->bufferBody(at, length);
     },
     [](http_parser* parser) -> int {
       auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
@@ -641,7 +640,12 @@ Envoy::StatusOr<size_t> ConnectionImpl::dispatchSlice(const char* slice, size_t 
   return rc;
 }
 
-Status ConnectionImpl::onHeaderField(const char* data, size_t length) {
+int ConnectionImpl::onHeaderField(const char* data, size_t length) {
+  auto status = onHeaderFieldStatus(data, length);
+  return setAndCheckCallbackStatus(std::move(status));
+}
+
+Status ConnectionImpl::onHeaderFieldStatus(const char* data, size_t length) {
   ASSERT(dispatching_);
   // We previously already finished up the headers, these headers are
   // now trailers.
@@ -663,7 +667,12 @@ Status ConnectionImpl::onHeaderField(const char* data, size_t length) {
   return checkMaxHeadersSize();
 }
 
-Status ConnectionImpl::onHeaderValue(const char* data, size_t length) {
+int ConnectionImpl::onHeaderValue(const char* data, size_t length) {
+  auto status = onHeaderValueStatus(data, length);
+  return setAndCheckCallbackStatus(std::move(status));
+}
+
+Status ConnectionImpl::onHeaderValueStatus(const char* data, size_t length) {
   ASSERT(dispatching_);
   if (header_parsing_state_ == HeaderParsingState::Done && !enableTrailers()) {
     // Ignore trailers.
@@ -790,7 +799,7 @@ Envoy::StatusOr<int> ConnectionImpl::onHeadersCompleteBase() {
   return handling_upgrade_ ? 2 : statusor.value();
 }
 
-void ConnectionImpl::bufferBody(const char* data, size_t length) {
+int ConnectionImpl::bufferBody(const char* data, size_t length) {
   auto slice = current_dispatching_buffer_->frontSlice();
   if (data == slice.mem_ && length == slice.len_) {
     buffered_body_.move(*current_dispatching_buffer_, length);
@@ -798,6 +807,8 @@ void ConnectionImpl::bufferBody(const char* data, size_t length) {
   } else {
     buffered_body_.add(data, length);
   }
+
+  return 0;
 }
 
 void ConnectionImpl::dispatchBufferedBody() {
@@ -841,7 +852,7 @@ Status ConnectionImpl::onMessageCompleteBase() {
   return okStatus();
 }
 
-Status ConnectionImpl::onMessageBeginBase() {
+void ConnectionImpl::onMessageBeginBase() {
   ENVOY_CONN_LOG(trace, "message begin", connection_);
   // Make sure that if HTTP/1.0 and HTTP/1.1 requests share a connection Envoy correctly sets
   // protocol for each request. Envoy defaults to 1.1 but sets the protocol to 1.0 where applicable
@@ -850,7 +861,6 @@ Status ConnectionImpl::onMessageBeginBase() {
   processing_trailers_ = false;
   header_parsing_state_ = HeaderParsingState::Field;
   allocHeaders();
-  return onMessageBegin();
 }
 
 void ConnectionImpl::onResetStreamBase(StreamResetReason reason) {
@@ -1004,7 +1014,7 @@ Envoy::StatusOr<int> ServerConnectionImpl::onHeadersComplete() {
   return 0;
 }
 
-Status ServerConnectionImpl::onMessageBegin() {
+Status ServerConnectionImpl::onMessageBeginStatus() {
   if (!resetStreamCalled()) {
     ASSERT(!active_request_.has_value());
     active_request_.emplace(*this, header_key_formatter_.get());
@@ -1102,7 +1112,7 @@ void ServerConnectionImpl::sendProtocolErrorOld(absl::string_view details) {
 Status ServerConnectionImpl::sendProtocolError(absl::string_view details) {
   // We do this here because we may get a protocol error before we have a logical stream.
   if (!active_request_.has_value()) {
-    RETURN_IF_ERROR(onMessageBeginBase());
+    RETURN_IF_ERROR(onMessageBeginStatus());
   }
   ASSERT(active_request_.has_value());
 

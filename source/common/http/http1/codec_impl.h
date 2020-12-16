@@ -255,7 +255,8 @@ protected:
   };
 
   bool resetStreamCalled() { return reset_stream_called_; }
-  Status onMessageBeginBase();
+  virtual Status onMessageBeginStatus() PURE;
+  void onMessageBeginBase();
 
   /**
    * Get memory used to represent HTTP headers or trailers currently being parsed.
@@ -338,7 +339,7 @@ private:
    * @param data supplies the start address.
    * @param length supplies the length.
    */
-  void bufferBody(const char* data, size_t length);
+  int bufferBody(const char* data, size_t length);
 
   /**
    * Push the accumulated body through the filter pipeline.
@@ -349,7 +350,7 @@ private:
    * Called when a request/response is beginning. A base routine happens first then a virtual
    * dispatch is invoked.
    */
-  virtual Status onMessageBegin() PURE;
+  int onMessageBegin();
 
   /**
    * Called when URL data is received.
@@ -365,7 +366,8 @@ private:
    * @param length supplies the length.
    * @return A status representing success.
    */
-  Status onHeaderField(const char* data, size_t length);
+  int onHeaderField(const char* data, size_t length);
+  Status onHeaderFieldStatus(const char* data, size_t length);
 
   /**
    * Called when header value data is received.
@@ -373,7 +375,8 @@ private:
    * @param length supplies the length.
    * @return A status representing success.
    */
-  Status onHeaderValue(const char* data, size_t length);
+  int onHeaderValue(const char* data, size_t length);
+  Status onHeaderValueStatus(const char* data, size_t length);
 
   /**
    * Called when headers are complete. A base routine happens first then a virtual dispatch is
@@ -503,7 +506,7 @@ private:
 
   // ConnectionImpl
   void onEncodeComplete() override;
-  Status onMessageBegin() override;
+  Status onMessageBeginStatus() override;
   int onUrl(const char* data, size_t length) override;
   Status onUrlStatus(const char* data, size_t length) override;
   Envoy::StatusOr<int> onHeadersComplete() override;
@@ -588,7 +591,7 @@ private:
   // ConnectionImpl
   Http::Status dispatch(Buffer::Instance& data) override;
   void onEncodeComplete() override {}
-  Status onMessageBegin() override { return okStatus(); }
+  Status onMessageBeginStatus() override { return okStatus(); }
   int onUrl(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
   Status onUrlStatus(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
   Envoy::StatusOr<int> onHeadersComplete() override;
