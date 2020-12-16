@@ -447,9 +447,7 @@ http_parser_settings ConnectionImpl::settings_{
       return static_cast<ConnectionImpl*>(parser->data)->bufferBody(at, length);
     },
     [](http_parser* parser) -> int {
-      auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
-      auto status = conn_impl->onMessageCompleteBase();
-      return conn_impl->setAndCheckCallbackStatus(std::move(status));
+      return static_cast<ConnectionImpl*>(parser->data)->onMessageComplete();
     },
     [](http_parser* parser) -> int {
       // A 0-byte chunk header is used to signal the end of the chunked body.
@@ -825,7 +823,7 @@ void ConnectionImpl::onChunkHeader(bool is_final_chunk) {
   }
 }
 
-Status ConnectionImpl::onMessageCompleteBase() {
+Status ConnectionImpl::onMessageCompleteBaseStatus() {
   ENVOY_CONN_LOG(trace, "message complete", connection_);
 
   dispatchBufferedBody();
@@ -845,7 +843,7 @@ Status ConnectionImpl::onMessageCompleteBase() {
     RETURN_IF_ERROR(completeLastHeader());
   }
 
-  onMessageComplete();
+  onMessageCompleteBase();
   return okStatus();
 }
 
@@ -864,6 +862,11 @@ void ConnectionImpl::onResetStreamBase(StreamResetReason reason) {
   ASSERT(!reset_stream_called_);
   reset_stream_called_ = true;
   onResetStream(reason);
+}
+
+int ConnectionImpl::onMessageComplete() {
+  auto status = onMessageCompleteBaseStatus();
+  return setAndCheckCallbackStatus(std::move(status));
 }
 
 ServerConnectionImpl::ServerConnectionImpl(
@@ -1054,7 +1057,7 @@ void ServerConnectionImpl::onBody(Buffer::Instance& data) {
   }
 }
 
-void ServerConnectionImpl::onMessageComplete() {
+void ServerConnectionImpl::onMessageCompleteBase() {
   ASSERT(!handling_upgrade_);
   if (active_request_.has_value()) {
     auto& active_request = active_request_.value();
@@ -1287,7 +1290,7 @@ void ClientConnectionImpl::onBody(Buffer::Instance& data) {
   }
 }
 
-void ClientConnectionImpl::onMessageComplete() {
+void ClientConnectionImpl::onMessageCompleteBase() {
   ENVOY_CONN_LOG(trace, "message complete", connection_);
   if (ignore_message_complete_for_1xx_) {
     ignore_message_complete_for_1xx_ = false;
