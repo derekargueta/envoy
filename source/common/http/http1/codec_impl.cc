@@ -453,9 +453,7 @@ http_parser_settings ConnectionImpl::settings_{
       return static_cast<ConnectionImpl*>(parser->data)->onHeaderValue(at, length);
     },
     [](http_parser* parser) -> int {
-      auto* conn_impl = static_cast<ConnectionImpl*>(parser->data);
-      auto statusor = conn_impl->onHeadersCompleteBase();
-      return conn_impl->setAndCheckCallbackStatusOr(std::move(statusor));
+      return static_cast<ConnectionImpl*>(parser->data)->onHeadersComplete();
     },
     [](http_parser* parser, const char* at, size_t length) -> int {
       return enumToSignedInt(static_cast<ConnectionImpl*>(parser->data)->bufferBody(at, length));
@@ -713,6 +711,10 @@ Status ConnectionImpl::onHeaderValueStatus(const char* data, size_t length) {
 
   return checkMaxHeadersSize();
 }
+int ConnectionImpl::onHeadersComplete() {
+  auto statusor = onHeadersCompleteStatus();
+  return setAndCheckCallbackStatusOr(std::move(statusor));
+}
 
 Envoy::StatusOr<ConnectionImpl::HttpParserCode> ConnectionImpl::onHeadersCompleteBase() {
   ASSERT(!processing_trailers_);
@@ -802,16 +804,9 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ConnectionImpl::onHeadersComplet
     }
   }
 
-  auto statusor = onHeadersComplete();
-  if (!statusor.ok()) {
-    RETURN_IF_ERROR(statusor.status());
-  }
-
   header_parsing_state_ = HeaderParsingState::Done;
 
-  // Returning HttpParserCode::NoBodyData informs http_parser to not expect a body or further data
-  // on this connection.
-  return handling_upgrade_ ? HttpParserCode::NoBodyData : statusor.value();
+  return okStatus();
 }
 
 HttpParserCode ConnectionImpl::bufferBody(const char* data, size_t length) {
@@ -1049,6 +1044,8 @@ Status ServerConnectionImpl::handlePath(RequestHeaderMap& headers, unsigned int 
 }
 
 Envoy::StatusOr<ConnectionImpl::HttpParserCode> ServerConnectionImpl::onHeadersComplete() {
+  RETURN_IF_ERROR(onHeadersCompleteBase());
+
   // Handle the case where response happens prior to request complete. It's up to upper layer code
   // to disconnect the connection but we shouldn't fire any more events since it doesn't make
   // sense.
@@ -1109,7 +1106,7 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ServerConnectionImpl::onHeadersC
     }
   }
 
-  return HttpParserCode::Success;
+  return handling_upgrade_ ? HttpParserCode::NoBodyData : HttpParserCode::Success;
 }
 
 Status ServerConnectionImpl::onMessageBeginStatus() {
@@ -1287,6 +1284,8 @@ RequestEncoder& ClientConnectionImpl::newStream(ResponseDecoder& response_decode
 Envoy::StatusOr<ConnectionImpl::HttpParserCode> ClientConnectionImpl::onHeadersComplete() {
   ENVOY_CONN_LOG(trace, "status_code {}", connection_, parser_.status_code);
 
+  RETURN_IF_ERROR(onHeadersCompleteBase());
+
   // Handle the case where the client is closing a kept alive connection (by sending a 408
   // with a 'Connection: close' header). In this case we just let response flush out followed
   // by the remote close.
@@ -1347,7 +1346,8 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ClientConnectionImpl::onHeadersC
 
   // Here we deal with cases where the response cannot have a body by returning
   // HttpParserCode::NoBody, but http_parser does not deal with it for us.
-  return cannotHaveBody() ? HttpParserCode::NoBody : HttpParserCode::Success;
+  const auto cannotHaveBodyRc = cannotHaveBody() ? HttpParserCode::NoBody : HttpParserCode::Success;
+  return handling_upgrade_ ? 2 : cannotHaveBodyRc;
 }
 
 bool ClientConnectionImpl::upgradeAllowed() const {

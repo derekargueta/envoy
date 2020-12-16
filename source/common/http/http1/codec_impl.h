@@ -265,6 +265,8 @@ protected:
   virtual Status onMessageBeginStatus() PURE;
   void onMessageBeginBase();
 
+  Status onHeadersCompleteBase();
+
   /**
    * Get memory used to represent HTTP headers or trailers currently being parsed.
    * Computed by adding the partial header field and value that is currently being parsed and the
@@ -402,8 +404,8 @@ private:
    * trailers are signaled via onMessageCompleteBase().
    * @return An error status or a HttpParserCode.
    */
-  Envoy::StatusOr<HttpParserCode> onHeadersCompleteBase();
-  virtual Envoy::StatusOr<HttpParserCode> onHeadersComplete() PURE;
+  HttpParserCode onHeadersComplete();
+  virtual Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() PURE;
 
   /**
    * Called to see if upgrade transition is allowed.
@@ -616,7 +618,7 @@ private:
   Status onMessageBeginStatus() override { return okStatus(); }
   int onUrl(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
   Status onUrlStatus(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
-  Envoy::StatusOr<HttpParserCode> onHeadersComplete() override;
+  Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() override;
   bool upgradeAllowed() const override;
   void onBody(Buffer::Instance& data) override;
   void onMessageComplete() override;
