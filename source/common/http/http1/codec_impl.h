@@ -20,6 +20,7 @@
 #include "common/http/header_map_impl.h"
 #include "common/http/http1/codec_stats.h"
 #include "common/http/http1/header_formatter.h"
+#include "common/http/http1/parser.h"
 #include "common/http/status.h"
 
 namespace Envoy {
