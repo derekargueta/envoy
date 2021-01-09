@@ -80,6 +80,7 @@ public:
   virtual uint16_t method() const PURE;
   virtual const char* methodName() const PURE;
   virtual const char* errnoName() PURE;
+  virtual int usesTransferEncoding() const PURE;
 };
 
 enum class Flags {

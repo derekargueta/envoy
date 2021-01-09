@@ -10,7 +10,7 @@ namespace Http1 {
 
 class LegacyHttpParserImpl : public Parser {
 public:
-  LegacyHttpParserImpl(MessageType type, void* data);
+  LegacyHttpParserImpl(MessageType type, ParserCallbacks* data);
   ~LegacyHttpParserImpl();
 
   // Http1::Parser
@@ -26,6 +26,7 @@ public:
   uint16_t method() const override;
   const char* methodName() const override;
   const char* errnoName() override;
+  int usesTransferEncoding() const override;
 
 private:
   class Impl;
