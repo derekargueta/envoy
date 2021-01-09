@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "common/common/assert.h"
+#include "common/common/enum_to_int.h"
 #include "common/http/http1/parser.h"
 
 namespace Envoy {
@@ -20,7 +21,6 @@ public:
     parser_.data = data;
     settings_ = {
         [](http_parser* parser) -> int {
-          std::cout << "message begin callback" << std::endl;
           return static_cast<ParserCallbacks*>(parser->data)->onMessageBegin();
         },
         [](http_parser* parser, const char* at, size_t length) -> int {
@@ -38,7 +38,7 @@ public:
           return static_cast<ParserCallbacks*>(parser->data)->onHeadersComplete();
         },
         [](http_parser* parser, const char* at, size_t length) -> int {
-          return static_cast<ParserCallbacks*>(parser->data)->bufferBody(at, length);
+          return enumToSignedInt(static_cast<ParserCallbacks*>(parser->data)->bufferBody(at, length));
         },
         [](http_parser* parser) -> int {
           return static_cast<ParserCallbacks*>(parser->data)->onMessageComplete();
@@ -77,12 +77,14 @@ public:
     return http_method_str(static_cast<http_method>(parser_.method));
   }
 
+  int usesTransferEncoding() const { return parser_.uses_transfer_encoding; }
+
 private:
   http_parser parser_;
   http_parser_settings settings_;
 };
 
-LegacyHttpParserImpl::LegacyHttpParserImpl(MessageType type, void* data) {
+LegacyHttpParserImpl::LegacyHttpParserImpl(MessageType type, ParserCallbacks* data) {
   http_parser_type parser_type;
   switch (type) {
   case MessageType::Request:
@@ -90,6 +92,7 @@ LegacyHttpParserImpl::LegacyHttpParserImpl(MessageType type, void* data) {
     break;
   case MessageType::Response:
     parser_type = HTTP_RESPONSE;
+    break;
   default:
     NOT_IMPLEMENTED_GCOVR_EXCL_LINE;
   }
@@ -126,6 +129,8 @@ const char* LegacyHttpParserImpl::methodName() const { return impl_->methodName(
 const char* LegacyHttpParserImpl::errnoName() {
   return http_errno_name(static_cast<http_errno>(impl_->getErrno()));
 }
+
+int LegacyHttpParserImpl::usesTransferEncoding() const { return impl_->usesTransferEncoding(); }
 
 } // namespace Http1
 } // namespace Http

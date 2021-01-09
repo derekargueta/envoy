@@ -176,7 +176,8 @@ private:
  */
 class ConnectionImpl : public virtual Connection,
                        protected Logger::Loggable<Logger::Id::http>,
-                       public ScopeTrackedObject {
+                       public ScopeTrackedObject,
+                       public ParserCallbacks {
 public:
   /**
    * @return Network::Connection& the backing network connection.
@@ -239,7 +240,7 @@ public:
 
 protected:
   ConnectionImpl(Network::Connection& connection, CodecStats& stats, const Http1Settings& settings,
-                 http_parser_type type, uint32_t max_headers_kb, const uint32_t max_headers_count,
+                 MessageType type, uint32_t max_headers_kb, const uint32_t max_headers_count,
                  HeaderKeyFormatterPtr&& header_key_formatter);
 
   // The following define special return values for http_parser callbacks. See:
@@ -285,7 +286,9 @@ protected:
   Network::Connection& connection_;
   CodecStats& stats_;
   const Http1Settings codec_settings_;
-  http_parser parser_;
+  std::unique_ptr<Parser> parser_;
+  // LegacyHttpParserImpl parser_;
+  // http_parser parser_;
   Buffer::Instance* current_dispatching_buffer_{};
   Http::Code error_code_{Http::Code::BadRequest};
   const HeaderKeyFormatterPtr header_key_formatter_;
@@ -360,7 +363,7 @@ private:
    * @param data supplies the start address.
    * @param length supplies the length.
    */
-  HttpParserCode bufferBody(const char* data, size_t length);
+  HttpParserCode bufferBody(const char* data, size_t length) override;
 
   /**
    * Push the accumulated body through the filter pipeline.
@@ -371,14 +374,15 @@ private:
    * Called when a request/response is beginning. A base routine happens first then a virtual
    * dispatch is invoked.
    */
-  int onMessageBegin();
+  int onMessageBegin() override;
 
   /**
    * Called when URL data is received.
    * @param data supplies the start address.
    * @param length supplies the length.
    */
-  virtual int onUrl(const char* data, size_t length) PURE;
+  int onUrl(const char* data, size_t length) override;
+  virtual int onUrlBase(const char* data, size_t length) PURE;
   virtual Status onUrlStatus(const char* data, size_t length) PURE;
 
   /**
@@ -387,7 +391,7 @@ private:
    * @param length supplies the length.
    * @return A status representing success.
    */
-  int onHeaderField(const char* data, size_t length);
+  int onHeaderField(const char* data, size_t length) override;
   Status onHeaderFieldStatus(const char* data, size_t length);
 
   /**
@@ -396,7 +400,7 @@ private:
    * @param length supplies the length.
    * @return A status representing success.
    */
-  int onHeaderValue(const char* data, size_t length);
+  int onHeaderValue(const char* data, size_t length) override;
   Status onHeaderValueStatus(const char* data, size_t length);
 
   /**
@@ -405,7 +409,7 @@ private:
    * trailers are signaled via onMessageCompleteBase().
    * @return An error status or a HttpParserCode.
    */
-  HttpParserCode onHeadersComplete();
+  HttpParserCode onHeadersComplete() override;
   virtual Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() PURE;
 
   /**
@@ -429,14 +433,14 @@ private:
    * Called when the request/response is complete.
    * @return A status representing success.
    */
-  int onMessageComplete();
+  int onMessageComplete() override;
   Status onMessageCompleteBaseStatus();
   virtual void onMessageCompleteBase() PURE;
 
   /**
    * Called when accepting a chunk header.
    */
-  int onChunkHeader(bool is_final_chunk);
+  int onChunkHeader(bool is_final_chunk) override;
 
   /**
    * @see onResetStreamBase().
@@ -472,7 +476,7 @@ private:
    */
   virtual void dumpAdditionalState(std::ostream& os, int indent_level) const PURE;
 
-  static http_parser_settings settings_;
+  // static http_parser_settings settings_;
 
   HeaderParsingState header_parsing_state_{HeaderParsingState::Field};
   // Used to accumulate the HTTP message body during the current dispatch call. The accumulated body
@@ -534,7 +538,7 @@ private:
   // ConnectionImpl
   void onEncodeComplete() override;
   Status onMessageBeginStatus() override;
-  int onUrl(const char* data, size_t length) override;
+  int onUrlBase(const char* data, size_t length) override;
   Status onUrlStatus(const char* data, size_t length) override;
   Envoy::StatusOr<HttpParserCode> onHeadersComplete() override;
   // If upgrade behavior is not allowed, the HCM will have sanitized the headers out.
@@ -618,7 +622,7 @@ private:
   Http::Status dispatch(Buffer::Instance& data) override;
   void onEncodeComplete() override {}
   Status onMessageBeginStatus() override { return okStatus(); }
-  int onUrl(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
+  int onUrlBase(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
   Status onUrlStatus(const char*, size_t) override { NOT_IMPLEMENTED_GCOVR_EXCL_LINE; }
   Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() override;
   bool upgradeAllowed() const override;
