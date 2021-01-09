@@ -14,7 +14,10 @@ namespace Http1 {
 
 class LegacyHttpParserImpl::Impl {
 public:
-  Impl(http_parser_type type) { http_parser_init(&parser_, type); }
+  Impl(http_parser_type type) {
+    http_parser_init(&parser_, type);
+    parser_.allow_chunked_length = 1;
+  }
 
   Impl(http_parser_type type, void* data) : Impl(type) {
     parser_.data = data;
@@ -42,7 +45,14 @@ public:
         [](http_parser* parser) -> int {
           return static_cast<ParserCallbacks*>(parser->data)->onMessageComplete();
         },
-        nullptr, // TODO(dereka) onChunkHeader
+        [](http_parser* parser) -> int {
+          // A 0-byte chunk header is used to signal the end of the chunked body.
+          // When this function is called, http-parser holds the size of the chunk in
+          // parser->content_length. See
+          // https://github.com/nodejs/http-parser/blob/v2.9.3/http_parser.h#L336
+          const bool is_final_chunk = (parser->content_length == 0);
+          return static_cast<ParserCallbacks*>(parser->data)->onChunkHeader(is_final_chunk);
+        },
         nullptr  // TODO(dereka) onChunkComplete
     };
   }

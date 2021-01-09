@@ -315,7 +315,6 @@ void ConnectionImpl::copyToBuffer(const char* data, uint64_t length) {
 }
 
 int ConnectionImpl::onMessageBegin() {
-  std::cout << "do we get this far" << std::endl;
   onMessageBeginBase();
   auto status = onMessageBeginStatus();
   return setAndCheckCallbackStatus(std::move(status));
@@ -428,40 +427,6 @@ int ConnectionImpl::setAndCheckCallbackStatusOr(Envoy::StatusOr<int>&& statusor)
   }
 }
 
-// http_parser_settings ConnectionImpl::settings_{
-//     [](http_parser* parser) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->onMessageBegin();
-//     },
-//     [](http_parser* parser, const char* at, size_t length) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->onUrl(at, length);
-//     },
-//     nullptr, // on_status
-//     [](http_parser* parser, const char* at, size_t length) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->onHeaderField(at, length);
-//     },
-//     [](http_parser* parser, const char* at, size_t length) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->onHeaderValue(at, length);
-//     },
-//     [](http_parser* parser) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->onHeadersComplete();
-//     },
-//     [](http_parser* parser, const char* at, size_t length) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->bufferBody(at, length);
-//     },
-//     [](http_parser* parser) -> int {
-//       return static_cast<ConnectionImpl*>(parser->data)->onMessageComplete();
-//     },
-//     [](http_parser* parser) -> int {
-//       // A 0-byte chunk header is used to signal the end of the chunked body.
-//       // When this function is called, http-parser holds the size of the chunk in
-//       // parser->content_length. See
-//       // https://github.com/nodejs/http-parser/blob/v2.9.3/http_parser.h#L336
-//       const bool is_final_chunk = (parser->content_length == 0);
-//       return static_cast<ConnectionImpl*>(parser->data)->onChunkHeader(is_final_chunk);
-//     },
-//     nullptr // on_chunk_complete
-// };
-
 ConnectionImpl::ConnectionImpl(Network::Connection& connection, CodecStats& stats,
                                const Http1Settings& settings, MessageType type,
                                uint32_t max_headers_kb, const uint32_t max_headers_count,
@@ -477,11 +442,7 @@ ConnectionImpl::ConnectionImpl(Network::Connection& connection, CodecStats& stat
                                []() -> void { /* TODO(adisuissa): Handle overflow watermark */ })),
       max_headers_kb_(max_headers_kb), max_headers_count_(max_headers_count) {
   output_buffer_->setWatermarks(connection.bufferLimit());
-  std::cout << "this address: " << this << std::endl;
   parser_ = std::make_unique<LegacyHttpParserImpl>(type, this);
-  // http_parser_init(&parser_, type);
-  // parser_.allow_chunked_length = 1;
-  // parser_.data = this;
 }
 
 Status ConnectionImpl::completeLastHeader() {
