@@ -571,10 +571,10 @@ Http::Status ConnectionImpl::innerDispatch(Buffer::Instance& data) {
       }
 
       total_parsed += statusor_parsed.value();
-      if (parser_->getErrno() != HPE_OK) {
+      if (parser_->getErrno() != static_cast<int>(ParserStatus::Ok)) {
         // Parse errors trigger an exception in dispatchSlice so we are guaranteed to be paused at
         // this point.
-        ASSERT(parser_->getErrno() == HPE_PAUSED);
+        ASSERT(parser_->getErrno() == static_cast<int>(ParserStatus::Paused));
         break;
       }
     }
@@ -602,7 +602,7 @@ Envoy::StatusOr<size_t> ConnectionImpl::dispatchSlice(const char* slice, size_t 
   if (!codec_status_.ok()) {
     return codec_status_;
   }
-  if (parser_->getErrno() != HPE_OK && parser_->getErrno() != HPE_PAUSED) {
+  if (parser_->getErrno() != static_cast<int>(ParserStatus::Ok) && parser_->getErrno() != static_cast<int>(ParserStatus::Paused)) {
     RETURN_IF_ERROR(sendProtocolError(Http1ResponseCodeDetails::get().HttpCodecError));
     // Avoid overwriting the codec_status_ set in the callbacks.
     ASSERT(codec_status_.ok());
@@ -713,7 +713,7 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ConnectionImpl::onHeadersComplet
       handling_upgrade_ = true;
     }
   }
-  if (parser_->method() == HTTP_CONNECT) {
+  if (parser_->method() == static_cast<int>(Method::Connect)) {
     if (request_or_response_headers.ContentLength()) {
       if (request_or_response_headers.getContentLengthValue() == "0") {
         request_or_response_headers.removeContentLength();
@@ -742,7 +742,7 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ConnectionImpl::onHeadersComplet
   // headers are present or if allowed by http1 codec settings and 'Transfer-Encoding'
   // is chunked - remove Content-Length and serve request.
   if (parser_->usesTransferEncoding() != 0 && request_or_response_headers.ContentLength()) {
-    if ((parser_->flags() & F_CHUNKED) && codec_settings_.allow_chunked_length_) {
+    if ((parser_->flags() & static_cast<int>(Flags::Chunked)) && codec_settings_.allow_chunked_length_) {
       request_or_response_headers.removeContentLength();
     } else {
       error_code_ = Http::Code::BadRequest;
@@ -759,7 +759,7 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ConnectionImpl::onHeadersComplet
   if (request_or_response_headers.TransferEncoding()) {
     const absl::string_view encoding = request_or_response_headers.getTransferEncodingValue();
     if (!absl::EqualsIgnoreCase(encoding, Headers::get().TransferEncodingValues.Chunked) ||
-        parser_->method() == HTTP_CONNECT) {
+        parser_->method() == static_cast<int>(Method::Connect)) {
       error_code_ = Http::Code::NotImplemented;
       RETURN_IF_ERROR(sendProtocolError(Http1ResponseCodeDetails::get().InvalidTransferEncoding));
       return codecProtocolError("http/1.1 protocol error: unsupported transfer encoding");
@@ -784,7 +784,7 @@ HttpParserCode ConnectionImpl::bufferBody(const char* data, size_t length) {
 }
 
 void ConnectionImpl::dispatchBufferedBody() {
-  ASSERT(parser_->getErrno() == HPE_OK || parser_->getErrno() == HPE_PAUSED);
+  ASSERT(parser_->getErrno() == static_cast<int>(ParserStatus::Ok) || parser_->getErrno() == static_cast<int>(ParserStatus::Paused));
   ASSERT(codec_status_.ok());
   if (buffered_body_.length() > 0) {
     onBody(buffered_body_);
@@ -959,13 +959,13 @@ void ServerConnectionImpl::onEncodeComplete() {
 Status ServerConnectionImpl::handlePath(RequestHeaderMap& headers, unsigned int method) {
   HeaderString path(Headers::get().Path);
 
-  bool is_connect = (method == HTTP_CONNECT);
+  bool is_connect = (method == static_cast<int>(Method::Connect));
 
   // The url is relative or a wildcard when the method is OPTIONS. Nothing to do here.
   auto& active_request = active_request_.value();
   if (!is_connect && !active_request.request_url_.getStringView().empty() &&
       (active_request.request_url_.getStringView()[0] == '/' ||
-       ((method == HTTP_OPTIONS) && active_request.request_url_.getStringView()[0] == '*'))) {
+       ((method == static_cast<int>(Method::Options)) && active_request.request_url_.getStringView()[0] == '*'))) {
     headers.addViaMove(std::move(path), std::move(active_request.request_url_));
     return okStatus();
   }
@@ -1026,7 +1026,6 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ServerConnectionImpl::onHeadersC
     auto& active_request = active_request_.value();
     auto& headers = absl::get<RequestHeaderMapPtr>(headers_or_trailers_);
     ENVOY_CONN_LOG(trace, "Server: onHeadersComplete size={}", connection_, headers->size());
-    const char* method_string = http_method_str(static_cast<http_method>(parser_->method()));
 
     if (!handling_upgrade_ && headers->Connection()) {
       // If we fail to sanitize the request, return a 400 to the client
@@ -1043,13 +1042,13 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ServerConnectionImpl::onHeadersC
 
     // Inform the response encoder about any HEAD method, so it can set content
     // length and transfer encoding headers correctly.
-    active_request.response_encoder_.setIsResponseToHeadRequest(parser_->method() == HTTP_HEAD);
-    active_request.response_encoder_.setIsResponseToConnectRequest(parser_->method() == HTTP_CONNECT);
+    active_request.response_encoder_.setIsResponseToHeadRequest(parser_->method() == static_cast<int>(Method::Head));
+    active_request.response_encoder_.setIsResponseToConnectRequest(parser_->method() == static_cast<int>(Method::Connect));
 
     RETURN_IF_ERROR(handlePath(*headers, parser_->method()));
     ASSERT(active_request.request_url_.empty());
 
-    headers->setMethod(method_string);
+    headers->setMethod(parser_->methodName());
 
     // Make sure the host is valid.
     auto details = HeaderUtility::requestHeadersValid(*headers);
@@ -1065,7 +1064,7 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ServerConnectionImpl::onHeadersC
     // with message complete. This allows upper layers to behave like HTTP/2 and prevents a proxy
     // scenario where the higher layers stream through and implicitly switch to chunked transfer
     // encoding because end stream with zero body length has not yet been indicated.
-    if (parser_->flags() & F_CHUNKED ||
+    if (parser_->flags() & static_cast<int>(Flags::Chunked) ||
         (parser_->contentLength() > 0 && parser_->contentLength() != ULLONG_MAX) || handling_upgrade_) {
       active_request.request_decoder_->decodeHeaders(std::move(headers), false);
 
@@ -1235,7 +1234,7 @@ bool ClientConnectionImpl::cannotHaveBody() {
     return true;
   } else if (parser_->statusCode() == 204 || parser_->statusCode() == 304 ||
              (parser_->statusCode() >= 200 && parser_->contentLength() == 0 &&
-              !(parser_->flags() & F_CHUNKED))) {
+              !(parser_->flags() & static_cast<int>(Flags::Chunked)))) {
     return true;
   } else {
     return false;

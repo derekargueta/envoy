@@ -1,7 +1,5 @@
 #pragma once
 
-#include <http_parser.h>
-
 #include <array>
 #include <cstdint>
 #include <list>
@@ -287,8 +285,6 @@ protected:
   CodecStats& stats_;
   const Http1Settings codec_settings_;
   std::unique_ptr<Parser> parser_;
-  // LegacyHttpParserImpl parser_;
-  // http_parser parser_;
   Buffer::Instance* current_dispatching_buffer_{};
   Http::Code error_code_{Http::Code::BadRequest};
   const HeaderKeyFormatterPtr header_key_formatter_;
