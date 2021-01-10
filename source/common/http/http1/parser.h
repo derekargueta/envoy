@@ -11,7 +11,7 @@ namespace Http1 {
 /**
  * Every parser implementation should have a corresponding parser type here.
  */
-enum class ParserType { Legacy };
+enum class ParserType { Legacy, Llhttp };
 
 enum class MessageType { Request, Response };
 

@@ -18,7 +18,7 @@
 #include "common/http/header_utility.h"
 #include "common/http/headers.h"
 #include "common/http/http1/header_formatter.h"
-#include "common/http/http1/legacy_parser.h"
+#include "common/http/http1/parser_factory.h"
 #include "common/http/utility.h"
 #include "common/runtime/runtime_features.h"
 
@@ -442,7 +442,7 @@ ConnectionImpl::ConnectionImpl(Network::Connection& connection, CodecStats& stat
                                []() -> void { /* TODO(adisuissa): Handle overflow watermark */ })),
       max_headers_kb_(max_headers_kb), max_headers_count_(max_headers_count) {
   output_buffer_->setWatermarks(connection.bufferLimit());
-  parser_ = std::make_unique<LegacyHttpParserImpl>(type, this);
+  parser_ = ParserFactory::createParser(ParserType::Legacy, type, this);
 }
 
 Status ConnectionImpl::completeLastHeader() {

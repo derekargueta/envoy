@@ -429,6 +429,18 @@ REPOSITORY_LOCATIONS_SPEC = dict(
         release_date = "2020-07-10",
         cpe = "cpe:2.3:a:nodejs:node.js:*",
     ),
+    com_github_nodejs_llhttp = dict(
+        project_name = "llhttp",
+        project_desc = "Parser for HTTP messages written in C",
+        project_url = "https://github.com/nodejs/llhttp",
+        version = "3.0.0",
+        sha256 = "02931556e69f8d075edb5896127099e70a093c104a994a57b4d72c85b48d25b0",
+        strip_prefix = "llhttp-release-v{version}",
+        urls = ["https://github.com/nodejs/llhttp/archive/release/v{version}.tar.gz"],
+        use_category = ["dataplane_core"],
+        release_date = "2020-11-30",
+        cpe = "N/A",
+    ),
     com_github_tencent_rapidjson = dict(
         project_name = "RapidJSON",
         project_desc = "Fast JSON parser/generator for C++",
