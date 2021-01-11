@@ -442,7 +442,7 @@ ConnectionImpl::ConnectionImpl(Network::Connection& connection, CodecStats& stat
                                []() -> void { /* TODO(adisuissa): Handle overflow watermark */ })),
       max_headers_kb_(max_headers_kb), max_headers_count_(max_headers_count) {
   output_buffer_->setWatermarks(connection.bufferLimit());
-  parser_ = ParserFactory::createParser(ParserType::Legacy, type, this);
+  parser_ = ParserFactory::createParser(ParserType::Llhttp, type, this);
 }
 
 Status ConnectionImpl::completeLastHeader() {
