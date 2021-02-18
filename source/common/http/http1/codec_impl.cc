@@ -673,12 +673,13 @@ Status ConnectionImpl::onHeaderValueStatus(const char* data, size_t length) {
 
   return checkMaxHeadersSize();
 }
+
 int ConnectionImpl::onHeadersComplete() {
   auto statusor = onHeadersCompleteStatus();
   return setAndCheckCallbackStatusOr(std::move(statusor));
 }
 
-Envoy::StatusOr<ConnectionImpl::HttpParserCode> ConnectionImpl::onHeadersCompleteBase() {
+Status ConnectionImpl::onHeadersCompleteBase() {
   ASSERT(!processing_trailers_);
   ASSERT(dispatching_);
   ENVOY_CONN_LOG(trace, "onHeadersCompleteBase", connection_);
@@ -1016,7 +1017,7 @@ Status ServerConnectionImpl::handlePath(RequestHeaderMap& headers, unsigned int 
   return okStatus();
 }
 
-Envoy::StatusOr<ConnectionImpl::HttpParserCode> ServerConnectionImpl::onHeadersComplete() {
+Envoy::StatusOr<HttpParserCode> ServerConnectionImpl::onHeadersCompleteStatus() {
   RETURN_IF_ERROR(onHeadersCompleteBase());
 
   // Handle the case where response happens prior to request complete. It's up to upper layer code
@@ -1253,7 +1254,7 @@ RequestEncoder& ClientConnectionImpl::newStream(ResponseDecoder& response_decode
   return pending_response_.value().encoder_;
 }
 
-Envoy::StatusOr<ConnectionImpl::HttpParserCode> ClientConnectionImpl::onHeadersCompleteStatus() {
+Envoy::StatusOr<HttpParserCode> ClientConnectionImpl::onHeadersCompleteStatus() {
   ENVOY_CONN_LOG(trace, "status_code {}", connection_, parser_->statusCode());
 
   RETURN_IF_ERROR(onHeadersCompleteBase());
@@ -1319,7 +1320,7 @@ Envoy::StatusOr<ConnectionImpl::HttpParserCode> ClientConnectionImpl::onHeadersC
   // Here we deal with cases where the response cannot have a body by returning
   // HttpParserCode::NoBody, but http_parser does not deal with it for us.
   const auto cannotHaveBodyRc = cannotHaveBody() ? HttpParserCode::NoBody : HttpParserCode::Success;
-  return handling_upgrade_ ? 2 : cannotHaveBodyRc;
+  return handling_upgrade_ ? HttpParserCode::NoBodyData : cannotHaveBodyRc;
 }
 
 bool ClientConnectionImpl::upgradeAllowed() const {

@@ -94,5 +94,6 @@ envoy_cc_library(
     deps = [
         ":parser_interface",
         "//source/common/common:assert_lib",
+        "//source/common/common:enum_to_int",
     ]
 )

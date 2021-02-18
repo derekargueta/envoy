@@ -38,7 +38,7 @@ public:
           return static_cast<ParserCallbacks*>(parser->data)->onHeaderValue(at, length);
         },
         [](http_parser* parser) -> int {
-          return static_cast<ParserCallbacks*>(parser->data)->onHeadersComplete();
+          return enumToSignedInt(static_cast<ParserCallbacks*>(parser->data)->onHeadersComplete());
         },
         [](http_parser* parser, const char* at, size_t length) -> int {
           return enumToSignedInt(static_cast<ParserCallbacks*>(parser->data)->bufferBody(at, length));

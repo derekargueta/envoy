@@ -241,23 +241,6 @@ protected:
                  MessageType type, uint32_t max_headers_kb, const uint32_t max_headers_count,
                  HeaderKeyFormatterPtr&& header_key_formatter);
 
-  // The following define special return values for http_parser callbacks. See:
-  // https://github.com/nodejs/http-parser/blob/5c5b3ac62662736de9e71640a8dc16da45b32503/http_parser.h#L72
-  // These codes do not overlap with standard HTTP Status codes. They are only used for user
-  // callbacks.
-  enum class HttpParserCode {
-    // Callbacks other than on_headers_complete should return a non-zero int to indicate an error
-    // and
-    // halt execution.
-    Error = -1,
-    Success = 0,
-    // Returning '1' from on_headers_complete will tell http_parser that it should not expect a
-    // body.
-    NoBody = 1,
-    // Returning '2' from on_headers_complete will tell http_parser that it should not expect a body
-    // nor any further data on the connection.
-    NoBodyData = 2,
-  };
   int setAndCheckCallbackStatus(Status&& status);
   int setAndCheckCallbackStatusOr(Envoy::StatusOr<HttpParserCode>&& statusor);
 
@@ -405,7 +388,7 @@ private:
    * trailers are signaled via onMessageCompleteBase().
    * @return An error status or a HttpParserCode.
    */
-  HttpParserCode onHeadersComplete() override;
+  int onHeadersComplete() override;
   virtual Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() PURE;
 
   /**
@@ -536,7 +519,7 @@ private:
   Status onMessageBeginStatus() override;
   int onUrlBase(const char* data, size_t length) override;
   Status onUrlStatus(const char* data, size_t length) override;
-  Envoy::StatusOr<HttpParserCode> onHeadersComplete() override;
+  Envoy::StatusOr<HttpParserCode> onHeadersCompleteStatus() override;
   // If upgrade behavior is not allowed, the HCM will have sanitized the headers out.
   bool upgradeAllowed() const override { return true; }
   void onBody(Buffer::Instance& data) override;
