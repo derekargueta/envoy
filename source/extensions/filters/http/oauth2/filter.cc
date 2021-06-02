@@ -18,6 +18,7 @@
 #include "common/http/headers.h"
 #include "common/http/message_impl.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/protobuf/utility.h"
 
 #include "absl/strings/escaping.h"
@@ -197,7 +198,7 @@ std::string OAuth2Filter::extractAccessToken(const Http::RequestHeaderMap& heade
 
   // Check for the named query string parameter.
   const auto path = headers.Path()->value().getStringView();
-  const auto params = Http::Utility::parseQueryString(path);
+  const auto params = Http::parseQueryString(path);
   const auto param = params.find("token");
   if (param != params.end()) {
     return param->second;
@@ -238,7 +239,7 @@ Http::FilterHeadersStatus OAuth2Filter::decodeHeaders(Http::RequestHeaderMap& he
     // to the callback path.
 
     if (config_->redirectPathMatcher().match(path_str)) {
-      Http::Utility::QueryParams query_parameters = Http::Utility::parseQueryString(path_str);
+      Http::QueryParams query_parameters = Http::parseQueryString(path_str);
 
       const auto state =
           Http::Utility::PercentEncoding::decode(query_parameters.at(queryParamsState()));
@@ -323,7 +324,7 @@ Http::FilterHeadersStatus OAuth2Filter::decodeHeaders(Http::RequestHeaderMap& he
   // At this point, we *are* on /_oauth. We believe this request comes from the authorization
   // server and we expect the query strings to contain the information required to get the access
   // token
-  const auto query_parameters = Http::Utility::parseQueryString(path_str);
+  const auto query_parameters = Http::parseQueryString(path_str);
   if (query_parameters.find(queryParamsError()) != query_parameters.end()) {
     sendUnauthorizedResponse();
     return Http::FilterHeadersStatus::StopIteration;

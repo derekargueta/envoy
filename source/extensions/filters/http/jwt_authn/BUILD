@@ -16,6 +16,7 @@ envoy_cc_library(
     deps = [
         "//source/common/http:header_utility_lib",
         "//source/common/http:utility_lib",
+        "//source/common/http:query_params_lib",
         "@envoy_api//envoy/extensions/filters/http/jwt_authn/v3:pkg_cc_proto",
     ],
 )
@@ -113,6 +114,7 @@ envoy_cc_library(
         ":verifier_lib",
         "//source/common/common:matchers_lib",
         "//source/common/http:header_utility_lib",
+        "//source/common/http:query_params_lib",
         "//source/common/router:config_lib",
         "@envoy_api//envoy/config/route/v3:pkg_cc_proto",
         "@envoy_api//envoy/extensions/filters/http/jwt_authn/v3:pkg_cc_proto",

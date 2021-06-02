@@ -4,6 +4,7 @@
 
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/network/utility.h"
 #include "common/upstream/host_utility.h"
 
@@ -46,7 +47,7 @@ ClustersHandler::ClustersHandler(Server::Instance& server) : HandlerContextBase(
 Http::Code ClustersHandler::handlerClusters(absl::string_view url,
                                             Http::ResponseHeaderMap& response_headers,
                                             Buffer::Instance& response, AdminStream&) {
-  Http::Utility::QueryParams query_params = Http::Utility::parseAndDecodeQueryString(url);
+  Http::QueryParams query_params = Http::parseAndDecodeQueryString(url);
   const auto format_value = Utility::formatParam(query_params);
 
   if (format_value.has_value() && format_value.value() == "json") {

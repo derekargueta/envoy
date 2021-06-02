@@ -32,7 +32,7 @@ private:
    * @param params supplies the incoming endpoint query params.
    * @return TRUE if level change succeeded, FALSE otherwise.
    */
-  bool changeLogLevel(const Http::Utility::QueryParams& params);
+  bool changeLogLevel(const Http::QueryParams& params);
 };
 
 } // namespace Server

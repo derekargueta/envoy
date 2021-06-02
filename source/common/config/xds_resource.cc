@@ -4,6 +4,7 @@
 
 #include "common/common/fmt.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
@@ -122,8 +123,8 @@ void decodePath(absl::string_view path, std::string* resource_type, std::string&
 
 void decodeQueryParams(absl::string_view query_params,
                        xds::core::v3::ContextParams& context_params) {
-  Http::Utility::QueryParams query_params_components =
-      Http::Utility::parseQueryString(query_params);
+  Http::QueryParams query_params_components =
+      Http::parseQueryString(query_params);
   for (const auto& it : query_params_components) {
     (*context_params.mutable_params())[PercentEncoding::decode(it.first)] =
         PercentEncoding::decode(it.second);

@@ -355,6 +355,7 @@ envoy_cc_fuzz_test(
     deps = [
         ":utility_fuzz_proto_cc_proto",
         "//source/common/http:utility_lib",
+        "//source/common/http:query_params_lib",
         "//test/fuzz:utility_lib",
         "//test/test_common:utility_lib",
     ],
@@ -474,6 +475,14 @@ envoy_cc_test(
         "//test/mocks/thread_local:thread_local_mocks",
         "//test/test_common:simulated_time_system_lib",
     ],
+)
+
+envoy_cc_test(
+    name = "query_params_test",
+    srcs = ["query_params_test.cc"],
+    deps = [
+        "//source/common/http:query_params_lib",
+    ]
 )
 
 envoy_proto_library(

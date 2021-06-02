@@ -53,7 +53,7 @@ ConfigUtility::QueryParameterMatcher::QueryParameterMatcher(
     : name_(config.name()), matcher_(maybeCreateStringMatcher(config)) {}
 
 bool ConfigUtility::QueryParameterMatcher::matches(
-    const Http::Utility::QueryParams& request_query_params) const {
+    const Http::QueryParams& request_query_params) const {
   auto query_param = request_query_params.find(name_);
   if (query_param == request_query_params.end()) {
     return false;
@@ -78,7 +78,7 @@ ConfigUtility::parsePriority(const envoy::config::core::v3::RoutingPriority& pri
 }
 
 bool ConfigUtility::matchQueryParams(
-    const Http::Utility::QueryParams& query_params,
+    const Http::QueryParams& query_params,
     const std::vector<QueryParameterMatcherPtr>& config_query_params) {
   for (const auto& config_query_param : config_query_params) {
     if (!config_query_param->matches(query_params)) {

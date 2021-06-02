@@ -6,6 +6,7 @@
 #include "common/common/empty_string.h"
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 
 #include "server/admin/utils.h"
 
@@ -19,7 +20,7 @@ RuntimeHandler::RuntimeHandler(Server::Instance& server) : HandlerContextBase(se
 Http::Code RuntimeHandler::handlerRuntime(absl::string_view url,
                                           Http::ResponseHeaderMap& response_headers,
                                           Buffer::Instance& response, AdminStream&) {
-  const Http::Utility::QueryParams params = Http::Utility::parseAndDecodeQueryString(url);
+  const Http::QueryParams params = Http::parseAndDecodeQueryString(url);
   response_headers.setReferenceContentType(Http::Headers::get().ContentTypeValues.Json);
 
   // TODO(jsedgwick): Use proto to structure this output instead of arbitrary JSON.
@@ -81,13 +82,13 @@ Http::Code RuntimeHandler::handlerRuntime(absl::string_view url,
 Http::Code RuntimeHandler::handlerRuntimeModify(absl::string_view url, Http::ResponseHeaderMap&,
                                                 Buffer::Instance& response,
                                                 AdminStream& admin_stream) {
-  Http::Utility::QueryParams params = Http::Utility::parseAndDecodeQueryString(url);
+  Http::QueryParams params = Http::parseAndDecodeQueryString(url);
   if (params.empty()) {
     // Check if the params are in the request's body.
     if (admin_stream.getRequestBody() != nullptr &&
         admin_stream.getRequestHeaders().getContentTypeValue() ==
             Http::Headers::get().ContentTypeValues.FormUrlEncoded) {
-      params = Http::Utility::parseFromBody(admin_stream.getRequestBody()->toString());
+      params = Http::parseFromBody(admin_stream.getRequestBody()->toString());
     }
 
     if (params.empty()) {

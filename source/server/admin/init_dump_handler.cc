@@ -2,6 +2,7 @@
 
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/network/utility.h"
 
 #include "server/admin/utils.h"
@@ -11,7 +12,7 @@ namespace Server {
 
 namespace {
 // Helper method to get the mask parameter.
-absl::optional<std::string> maskParam(const Http::Utility::QueryParams& params) {
+absl::optional<std::string> maskParam(const Http::QueryParams& params) {
   return Utility::queryParam(params, "mask");
 }
 
@@ -22,7 +23,7 @@ InitDumpHandler::InitDumpHandler(Server::Instance& server) : HandlerContextBase(
 Http::Code InitDumpHandler::handlerInitDump(absl::string_view url,
                                             Http::ResponseHeaderMap& response_headers,
                                             Buffer::Instance& response, AdminStream&) const {
-  Http::Utility::QueryParams query_params = Http::Utility::parseAndDecodeQueryString(url);
+  Http::QueryParams query_params = Http::parseAndDecodeQueryString(url);
   const auto mask = maskParam(query_params);
 
   envoy::admin::v3::UnreadyTargetsDumps dump = *dumpUnreadyTargets(mask);

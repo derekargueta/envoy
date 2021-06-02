@@ -1,5 +1,6 @@
 #include "common/crypto/utility.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/protobuf/utility.h"
 
 #include "source/extensions/filters/http/oauth2/oauth_response.pb.h"
@@ -165,7 +166,7 @@ typed_config:
     ASSERT_TRUE(upstream_request_->waitForHeadersComplete());
 
     std::string request_body = upstream_request_->body().toString();
-    const auto query_parameters = Http::Utility::parseFromBody(request_body);
+    const auto query_parameters = Http::parseFromBody(request_body);
     auto it = query_parameters.find("client_secret");
 
     ASSERT_TRUE(it != query_parameters.end());

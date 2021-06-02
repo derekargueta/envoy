@@ -26,6 +26,7 @@ envoy_cc_library(
         ":request_response_cc_proto",
         "//include/envoy/http:filter_interface",
         "//source/common/common:base64_lib",
+        "//source/common/http:query_params_lib",
         "//source/extensions/common/aws:credentials_provider_impl_lib",
         "//source/extensions/common/aws:signer_impl_lib",
         "//source/extensions/filters/http:well_known_names",

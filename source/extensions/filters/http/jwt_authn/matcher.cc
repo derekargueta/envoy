@@ -6,6 +6,7 @@
 #include "common/common/logger.h"
 #include "common/common/matchers.h"
 #include "common/common/regex.h"
+#include "common/http/query_params.h"
 #include "common/router/config_impl.h"
 
 #include "absl/strings/match.h"
@@ -41,8 +42,8 @@ public:
 
     matches &= Http::HeaderUtility::matchHeaders(headers, config_headers_);
     if (!config_query_parameters_.empty()) {
-      Http::Utility::QueryParams query_parameters =
-          Http::Utility::parseQueryString(headers.getPathValue());
+      Http::QueryParams query_parameters =
+          Http::parseQueryString(headers.getPathValue());
       matches &= ConfigUtility::matchQueryParams(query_parameters, config_query_parameters_);
     }
     return matches;
@@ -126,7 +127,7 @@ public:
   bool matches(const Http::RequestHeaderMap& headers) const override {
     if (BaseMatcherImpl::matchRoute(headers)) {
       const Http::HeaderString& path = headers.Path()->value();
-      const absl::string_view query_string = Http::Utility::findQueryStringStart(path);
+      const absl::string_view query_string = Http::findQueryStringStart(path);
       absl::string_view path_view = path.getStringView();
       path_view.remove_suffix(query_string.length());
       if (regex_->match(path_view)) {

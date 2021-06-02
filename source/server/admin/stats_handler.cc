@@ -6,6 +6,7 @@
 #include "common/html/utility.h"
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 
 #include "server/admin/prometheus_stats.h"
 #include "server/admin/utils.h"
@@ -76,7 +77,7 @@ Http::Code StatsHandler::handlerStats(absl::string_view url,
   }
 
   Http::Code rc = Http::Code::OK;
-  const Http::Utility::QueryParams params = Http::Utility::parseAndDecodeQueryString(url);
+  const Http::QueryParams params = Http::parseAndDecodeQueryString(url);
 
   const bool used_only = params.find("usedonly") != params.end();
   absl::optional<std::regex> regex;
@@ -142,8 +143,8 @@ Http::Code StatsHandler::handlerStats(absl::string_view url,
 Http::Code StatsHandler::handlerPrometheusStats(absl::string_view path_and_query,
                                                 Http::ResponseHeaderMap&,
                                                 Buffer::Instance& response, AdminStream&) {
-  const Http::Utility::QueryParams params =
-      Http::Utility::parseAndDecodeQueryString(path_and_query);
+  const Http::QueryParams params =
+      Http::parseAndDecodeQueryString(path_and_query);
   const bool used_only = params.find("usedonly") != params.end();
   absl::optional<std::regex> regex;
   if (!Utility::filterParam(params, response, regex)) {

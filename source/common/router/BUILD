@@ -61,6 +61,7 @@ envoy_cc_library(
         "//source/common/http:headers_lib",
         "//source/common/http:path_utility_lib",
         "//source/common/http:utility_lib",
+        "//source/common/http:query_params_lib",
         "//source/common/protobuf:utility_lib",
         "//source/common/tracing:http_tracer_lib",
         "//source/extensions/filters/http:well_known_names",

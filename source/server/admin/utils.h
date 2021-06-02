@@ -18,12 +18,12 @@ envoy::admin::v3::ServerInfo::State serverState(Init::Manager::State state,
 
 void populateFallbackResponseHeaders(Http::Code code, Http::ResponseHeaderMap& header_map);
 
-bool filterParam(Http::Utility::QueryParams params, Buffer::Instance& response,
+bool filterParam(Http::QueryParams params, Buffer::Instance& response,
                  absl::optional<std::regex>& regex);
 
-absl::optional<std::string> formatParam(const Http::Utility::QueryParams& params);
+absl::optional<std::string> formatParam(const Http::QueryParams& params);
 
-absl::optional<std::string> queryParam(const Http::Utility::QueryParams& params,
+absl::optional<std::string> queryParam(const Http::QueryParams& params,
                                        const std::string& key);
 
 } // namespace Utility

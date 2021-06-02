@@ -39,7 +39,7 @@ void populateFallbackResponseHeaders(Http::Code code, Http::ResponseHeaderMap& h
 }
 
 // Helper method to get filter parameter, or report an error for an invalid regex.
-bool filterParam(Http::Utility::QueryParams params, Buffer::Instance& response,
+bool filterParam(Http::QueryParams params, Buffer::Instance& response,
                  absl::optional<std::regex>& regex) {
   auto p = params.find("filter");
   if (p != params.end()) {
@@ -57,12 +57,12 @@ bool filterParam(Http::Utility::QueryParams params, Buffer::Instance& response,
 }
 
 // Helper method to get the format parameter.
-absl::optional<std::string> formatParam(const Http::Utility::QueryParams& params) {
+absl::optional<std::string> formatParam(const Http::QueryParams& params) {
   return queryParam(params, "format");
 }
 
 // Helper method to get a query parameter.
-absl::optional<std::string> queryParam(const Http::Utility::QueryParams& params,
+absl::optional<std::string> queryParam(const Http::QueryParams& params,
                                        const std::string& key) {
   return (params.find(key) != params.end()) ? absl::optional<std::string>{params.at(key)}
                                             : absl::nullopt;

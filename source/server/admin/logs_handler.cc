@@ -4,6 +4,7 @@
 
 #include "common/common/fancy_logger.h"
 #include "common/common/logger.h"
+#include "common/http/query_params.h"
 
 #include "server/admin/utils.h"
 
@@ -14,7 +15,7 @@ LogsHandler::LogsHandler(Server::Instance& server) : HandlerContextBase(server) 
 
 Http::Code LogsHandler::handlerLogging(absl::string_view url, Http::ResponseHeaderMap&,
                                        Buffer::Instance& response, AdminStream&) {
-  Http::Utility::QueryParams query_params = Http::Utility::parseQueryString(url);
+  Http::QueryParams query_params = Http::parseQueryString(url);
 
   Http::Code rc = Http::Code::OK;
   if (!query_params.empty() && !changeLogLevel(query_params)) {
@@ -52,7 +53,7 @@ Http::Code LogsHandler::handlerReopenLogs(absl::string_view, Http::ResponseHeade
   return Http::Code::OK;
 }
 
-bool LogsHandler::changeLogLevel(const Http::Utility::QueryParams& params) {
+bool LogsHandler::changeLogLevel(const Http::QueryParams& params) {
   if (params.size() != 1) {
     return false;
   }

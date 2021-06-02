@@ -31,6 +31,7 @@
 #include "common/http/headers.h"
 #include "common/http/path_utility.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/protobuf/protobuf.h"
 #include "common/protobuf/utility.h"
 #include "common/router/reset_header_parser.h"
@@ -545,8 +546,8 @@ bool RouteEntryImplBase::matchRoute(const Http::RequestHeaderMap& headers,
 
   matches &= Http::HeaderUtility::matchHeaders(headers, config_headers_);
   if (!config_query_parameters_.empty()) {
-    Http::Utility::QueryParams query_parameters =
-        Http::Utility::parseQueryString(headers.getPathValue());
+    Http::QueryParams query_parameters =
+        Http::parseQueryString(headers.getPathValue());
     matches &= ConfigUtility::matchQueryParams(query_parameters, config_query_parameters_);
   }
 

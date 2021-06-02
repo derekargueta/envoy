@@ -5,6 +5,7 @@
 
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/network/utility.h"
 
 #include "server/admin/utils.h"
@@ -98,17 +99,17 @@ void trimResourceMessage(const Protobuf::FieldMask& field_mask, Protobuf::Messag
 }
 
 // Helper method to get the resource parameter.
-absl::optional<std::string> resourceParam(const Http::Utility::QueryParams& params) {
+absl::optional<std::string> resourceParam(const Http::QueryParams& params) {
   return Utility::queryParam(params, "resource");
 }
 
 // Helper method to get the mask parameter.
-absl::optional<std::string> maskParam(const Http::Utility::QueryParams& params) {
+absl::optional<std::string> maskParam(const Http::QueryParams& params) {
   return Utility::queryParam(params, "mask");
 }
 
 // Helper method to get the eds parameter.
-bool shouldIncludeEdsInDump(const Http::Utility::QueryParams& params) {
+bool shouldIncludeEdsInDump(const Http::QueryParams& params) {
   return Utility::queryParam(params, "include_eds") != absl::nullopt;
 }
 
@@ -120,7 +121,7 @@ ConfigDumpHandler::ConfigDumpHandler(ConfigTracker& config_tracker, Server::Inst
 Http::Code ConfigDumpHandler::handlerConfigDump(absl::string_view url,
                                                 Http::ResponseHeaderMap& response_headers,
                                                 Buffer::Instance& response, AdminStream&) const {
-  Http::Utility::QueryParams query_params = Http::Utility::parseAndDecodeQueryString(url);
+  Http::QueryParams query_params = Http::parseAndDecodeQueryString(url);
   const auto resource = resourceParam(query_params);
   const auto mask = maskParam(query_params);
   const bool include_eds = shouldIncludeEdsInDump(query_params);

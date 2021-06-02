@@ -1,5 +1,6 @@
 #include "server/admin/profiling_handler.h"
 
+#include "common/http/query_params.h"
 #include "common/profiler/profiler.h"
 
 #include "server/admin/utils.h"
@@ -11,7 +12,7 @@ ProfilingHandler::ProfilingHandler(const std::string& profile_path) : profile_pa
 
 Http::Code ProfilingHandler::handlerCpuProfiler(absl::string_view url, Http::ResponseHeaderMap&,
                                                 Buffer::Instance& response, AdminStream&) {
-  Http::Utility::QueryParams query_params = Http::Utility::parseAndDecodeQueryString(url);
+  Http::QueryParams query_params = Http::parseAndDecodeQueryString(url);
   if (query_params.size() != 1 || query_params.begin()->first != "enable" ||
       (query_params.begin()->second != "y" && query_params.begin()->second != "n")) {
     response.add("?enable=<y|n>\n");
@@ -40,7 +41,7 @@ Http::Code ProfilingHandler::handlerHeapProfiler(absl::string_view url, Http::Re
     return Http::Code::NotImplemented;
   }
 
-  Http::Utility::QueryParams query_params = Http::Utility::parseAndDecodeQueryString(url);
+  Http::QueryParams query_params = Http::parseAndDecodeQueryString(url);
   if (query_params.size() != 1 || query_params.begin()->first != "enable" ||
       (query_params.begin()->second != "y" && query_params.begin()->second != "n")) {
     response.add("?enable=<y|n>\n");

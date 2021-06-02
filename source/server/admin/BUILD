@@ -106,6 +106,7 @@ envoy_cc_library(
         "//source/common/html:utility_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
         "//source/common/stats:histogram_lib",
         "@envoy_api//envoy/admin/v3:pkg_cc_proto",
     ],
@@ -135,6 +136,7 @@ envoy_cc_library(
         "//source/common/buffer:buffer_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
         "@envoy_api//envoy/admin/v3:pkg_cc_proto",
     ],
 )
@@ -152,6 +154,7 @@ envoy_cc_library(
         "//source/common/buffer:buffer_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
     ],
 )
 
@@ -169,6 +172,7 @@ envoy_cc_library(
         "//source/common/common:minimal_logger_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
     ],
 )
 
@@ -183,6 +187,7 @@ envoy_cc_library(
         "//source/common/buffer:buffer_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
         "//source/common/profiler:profiler_lib",
     ],
 )
@@ -235,6 +240,7 @@ envoy_cc_library(
         "//source/common/buffer:buffer_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
         "//source/common/upstream:host_utility_lib",
         "@envoy_api//envoy/admin/v3:pkg_cc_proto",
     ],
@@ -254,6 +260,7 @@ envoy_cc_library(
         "//source/common/buffer:buffer_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
         "@envoy_api//envoy/admin/v3:pkg_cc_proto",
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
         "@envoy_api//envoy/config/endpoint/v3:pkg_cc_proto",
@@ -271,6 +278,7 @@ envoy_cc_library(
         "//include/envoy/server:instance_interface",
         "//source/common/http:codes_lib",
         "//source/common/http:header_map_lib",
+        "//source/common/http:query_params_lib",
         "@envoy_api//envoy/admin/v3:pkg_cc_proto",
     ],
 )

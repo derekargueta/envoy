@@ -15,6 +15,7 @@
 #include "common/crypto/utility.h"
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/protobuf/message_validator_impl.h"
 #include "common/protobuf/utility.h"
 #include "common/singleton/const_singleton.h"
@@ -293,7 +294,7 @@ void Filter::jsonizeRequest(Http::RequestHeaderMap const& headers, const Buffer:
 
   // Wrap the Query String
   if (headers.Path()) {
-    for (auto&& kv_pair : Http::Utility::parseQueryString(headers.getPathValue())) {
+    for (auto&& kv_pair : Http::parseQueryString(headers.getPathValue())) {
       json_req.mutable_query_string_parameters()->insert({kv_pair.first, kv_pair.second});
     }
   }

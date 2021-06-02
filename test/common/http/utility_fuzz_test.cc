@@ -1,4 +1,5 @@
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 
 #include "test/common/http/utility_fuzz.pb.validate.h"
 #include "test/fuzz/fuzz_runner.h"
@@ -19,7 +20,7 @@ DEFINE_PROTO_FUZZER(const test::common::http::UtilityTestCase& input) {
   switch (input.utility_selector_case()) {
   case test::common::http::UtilityTestCase::kParseQueryString: {
     // TODO(dio): Add the case when using parseAndDecodeQueryString().
-    Http::Utility::parseQueryString(input.parse_query_string());
+    Http::parseQueryString(input.parse_query_string());
     break;
   }
   case test::common::http::UtilityTestCase::kParseCookieValue: {
@@ -59,13 +60,13 @@ DEFINE_PROTO_FUZZER(const test::common::http::UtilityTestCase& input) {
   case test::common::http::UtilityTestCase::kParseParameters: {
     const auto& parse_parameters = input.parse_parameters();
     // TODO(dio): Add a case when doing parse_parameters with decode_params flag true.
-    Http::Utility::parseParameters(parse_parameters.data(), parse_parameters.start(),
+    Http::parseParameters(parse_parameters.data(), parse_parameters.start(),
                                    /*decode_params*/ false);
     break;
   }
   case test::common::http::UtilityTestCase::kFindQueryString: {
     Http::HeaderString path(input.find_query_string());
-    Http::Utility::findQueryStringStart(path);
+    Http::findQueryStringStart(path);
     break;
   }
   case test::common::http::UtilityTestCase::kMakeSetCookieValue: {

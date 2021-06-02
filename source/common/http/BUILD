@@ -339,6 +339,7 @@ envoy_cc_library(
     hdrs = ["hash_policy.h"],
     deps = [
         ":utility_lib",
+        ":query_params_lib",
         "//include/envoy/http:hash_policy_interface",
         "@envoy_api//envoy/config/route/v3:pkg_cc_proto",
     ],
@@ -499,6 +500,18 @@ envoy_cc_library(
     srcs = ["legacy_path_canonicalizer.cc"],
     hdrs = ["legacy_path_canonicalizer.h"],
     deps = ["//source/common/chromium_url"],
+)
+
+envoy_cc_library(
+    name = "query_params_lib",
+    srcs = ["query_params.cc"],
+    hdrs = ["query_params.h"],
+    deps = [
+        ":utility_lib",
+        "//include/envoy/http:header_map_interface",
+        "//include/envoy/http:query_params_interface",
+        "//source/common/common:utility_lib",
+    ],
 )
 
 envoy_cc_library(

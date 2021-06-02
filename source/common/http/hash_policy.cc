@@ -7,6 +7,7 @@
 #include "common/common/matchers.h"
 #include "common/common/regex.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/runtime/runtime_features.h"
 
 #include "absl/strings/str_cat.h"
@@ -143,8 +144,8 @@ public:
 
     const HeaderEntry* header = headers.Path();
     if (header) {
-      Http::Utility::QueryParams query_parameters =
-          Http::Utility::parseQueryString(header->value().getStringView());
+      Http::QueryParams query_parameters =
+          Http::parseQueryString(header->value().getStringView());
       const auto& iter = query_parameters.find(parameter_name_);
       if (iter != query_parameters.end()) {
         hash = HashUtil::xxHash64(iter->second);

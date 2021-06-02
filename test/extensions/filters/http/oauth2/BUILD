@@ -28,6 +28,7 @@ envoy_extension_cc_test(
     extension_name = "envoy.filters.http.oauth2",
     deps = [
         "//source/common/http:utility_lib",
+        "//source/common/http:query_params_lib",
         "//source/extensions/filters/http/oauth2:config",
         "//source/extensions/filters/http/oauth2:oauth_lib",
         "//test/integration:http_integration_lib",

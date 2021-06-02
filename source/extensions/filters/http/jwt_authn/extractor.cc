@@ -8,6 +8,7 @@
 #include "common/http/header_utility.h"
 #include "common/http/headers.h"
 #include "common/http/utility.h"
+#include "common/http/query_params.h"
 #include "common/singleton/const_singleton.h"
 
 #include "absl/container/node_hash_set.h"
@@ -241,7 +242,7 @@ ExtractorImpl::extract(const Http::RequestHeaderMap& headers) const {
   }
 
   // Check query parameter locations.
-  const auto& params = Http::Utility::parseAndDecodeQueryString(headers.getPathValue());
+  const auto& params = Http::parseAndDecodeQueryString(headers.getPathValue());
   for (const auto& location_it : param_locations_) {
     const auto& param_key = location_it.first;
     const auto& location_spec = location_it.second;

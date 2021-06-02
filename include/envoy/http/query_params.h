@@ -5,7 +5,6 @@
 
 namespace Envoy {
 namespace Http {
-namespace Utility {
 
 // TODO(jmarantz): this should probably be a proper class, with methods to serialize
 // using proper formatting. Perhaps similar to
@@ -13,6 +12,5 @@ namespace Utility {
 
 using QueryParams = std::map<std::string, std::string>;
 
-} // namespace Utility
 } // namespace Http
 } // namespace Envoy

@@ -50,6 +50,7 @@ envoy_cc_library(
         "//source/common/common:empty_string",
         "//source/common/config:datasource_lib",
         "//source/common/formatter:substitution_formatter_lib",
+        "//source/common/http:query_params_lib",
         "//source/common/http:rest_api_fetcher_lib",
         "//source/common/protobuf:utility_lib",
         "//source/extensions/common/crypto:utility_lib",
