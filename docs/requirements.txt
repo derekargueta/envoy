@@ -183,9 +183,9 @@ snowballstemmer==2.1.0 \
     # via
     #   -r docs/requirements.txt
     #   sphinx
-sphinx-copybutton==0.3.1 \
-    --hash=sha256:0e0461df394515284e3907e3f418a0c60ef6ab6c9a27a800c8552772d0a402a2 \
-    --hash=sha256:5125c718e763596e6e52d92e15ee0d6f4800ad3817939be6dee51218870b3e3d
+sphinx-copybutton==0.3.2 \
+    --hash=sha256:f16f8ed8dfc60f2b34a58cb69bfa04722e24be2f6d7e04db5554c32cde4df815 \
+    --hash=sha256:f901f17e7dadc063bcfca592c5160f9113ec17501a59e046af3edb82b7527656
     # via -r docs/requirements.txt
 sphinx-rtd-theme==0.5.2 \
     --hash=sha256:32bd3b5d13dc8186d7a42fc816a23d32e83a4827d7d9882948e7b837c232da5a \
