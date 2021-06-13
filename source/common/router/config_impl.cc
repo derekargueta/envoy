@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "envoy/config/core/v3/base.pb.h"
@@ -424,6 +425,14 @@ RouteEntryImplBase::RouteEntryImplBase(const VirtualHostImpl& vhost,
         std::make_unique<ConfigUtility::QueryParameterMatcher>(query_parameter));
   }
 
+  for (const auto& query_parameter : route.query_params_to_add()) {
+    query_params_to_add_.push_back(std::make_pair(query_parameter.first, query_parameter.second));
+  }
+
+  for (const auto& query_parameter : route.query_params_to_remove()) {
+    query_params_to_remove_.push_back(query_parameter);
+  }
+
   if (!route.route().hash_policy().empty()) {
     hash_policy_ = std::make_unique<Http::HashPolicyImpl>(route.route().hash_policy());
   }
@@ -548,7 +557,7 @@ const std::string& RouteEntryImplBase::clusterName() const { return cluster_name
 void RouteEntryImplBase::finalizeRequestHeaders(Http::RequestHeaderMap& headers,
                                                 const StreamInfo::StreamInfo& stream_info,
                                                 bool insert_envoy_original_path) const {
-  if (!vhost_.globalRouteConfig().mostSpecificHeaderMutationsWins()) {
+  if (!vhost_.globalRouteConfig().mostSpecificHeaderMutationsWins() || !vhost_.globalRouteConfig().mostSpecificRequestMutationsWins()) {
     // Append user-specified request headers from most to least specific: route-level headers,
     // virtual host level headers and finally global connection manager level headers.
     request_headers_parser_->evaluateHeaders(headers, stream_info);
@@ -590,6 +599,17 @@ void RouteEntryImplBase::finalizeRequestHeaders(Http::RequestHeaderMap& headers,
         host_rewrite_path_regex_->replaceAll(just_path, host_rewrite_path_regex_substitution_));
   }
 
+  // Here apply query params in order
+  if (!vhost_.globalRouteConfig().mostSpecificRequestMutationsWins()) {
+    // request_params_mutator_.evaluate(headers)
+    // vhost_.requestQueryParamsMutator().evaluate(headers)
+    // vhost_.globalRoutingConfig().requestQueryParamsMutator().evaluate(headers)
+  } else {
+    // vhost_.globalRoutingConfig().requestQueryParamsMutator().evaluate(headers)
+    // vhost_.requestQueryParamsMutator().evaluate(headers)
+    // request_params_mutator_.evaluate(headers)
+  }
+
   // Handle path rewrite
   absl::optional<std::string> container;
   if (!getPathRewrite(headers, container).empty() || regex_rewrite_ != nullptr) {
@@ -599,7 +619,7 @@ void RouteEntryImplBase::finalizeRequestHeaders(Http::RequestHeaderMap& headers,
 
 void RouteEntryImplBase::finalizeResponseHeaders(Http::ResponseHeaderMap& headers,
                                                  const StreamInfo::StreamInfo& stream_info) const {
-  if (!vhost_.globalRouteConfig().mostSpecificHeaderMutationsWins()) {
+  if (!vhost_.globalRouteConfig().mostSpecificHeaderMutationsWins() || !vhost_.globalRouteConfig().mostSpecificRequestMutationsWins()) {
     // Append user-specified request headers from most to least specific: route-level headers,
     // virtual host level headers and finally global connection manager level headers.
     response_headers_parser_->evaluateHeaders(headers, stream_info);
@@ -617,7 +637,7 @@ Http::HeaderTransforms
 RouteEntryImplBase::responseHeaderTransforms(const StreamInfo::StreamInfo& stream_info,
                                              bool do_formatting) const {
   Http::HeaderTransforms transforms;
-  if (!vhost_.globalRouteConfig().mostSpecificHeaderMutationsWins()) {
+  if (!vhost_.globalRouteConfig().mostSpecificHeaderMutationsWins() || !vhost_.globalRouteConfig().mostSpecificRequestMutationsWins()) {
     // Append user-specified request headers from most to least specific: route-level headers,
     // virtual host level headers and finally global connection manager level headers.
     mergeTransforms(transforms,
@@ -1194,6 +1214,7 @@ VirtualHostImpl::VirtualHostImpl(
                                                       virtual_host.request_headers_to_remove())),
       response_headers_parser_(HeaderParser::configure(virtual_host.response_headers_to_add(),
                                                        virtual_host.response_headers_to_remove())),
+      query_params_parser_(QueryParamsParser::configure(virtual_host.query_params_to_remove())),
       per_filter_configs_(virtual_host.typed_per_filter_config(),
                           virtual_host.hidden_envoy_deprecated_per_filter_config(),
                           optional_http_filters, factory_context, validator),
@@ -1493,6 +1514,7 @@ ConfigImpl::ConfigImpl(const envoy::config::route::v3::RouteConfiguration& confi
     : name_(config.name()), symbol_table_(factory_context.scope().symbolTable()),
       uses_vhds_(config.has_vhds()),
       most_specific_header_mutations_wins_(config.most_specific_header_mutations_wins()),
+      most_specific_request_mutations_wins_(config.most_specific_request_mutations_wins_()),
       max_direct_response_body_size_bytes_(
           PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, max_direct_response_body_size_bytes,
                                           DEFAULT_MAX_DIRECT_RESPONSE_BODY_SIZE_BYTES)) {

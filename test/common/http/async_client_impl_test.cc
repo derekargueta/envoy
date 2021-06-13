@@ -1588,6 +1588,7 @@ TEST_F(AsyncClientImplUnitTest, RouteImplInitTest) {
 
 TEST_F(AsyncClientImplUnitTest, NullConfig) {
   EXPECT_FALSE(config_.mostSpecificHeaderMutationsWins());
+  EXPECT_FALSE(config_.mostSpecificRequestMutationsWins());
 }
 
 TEST_F(AsyncClientImplUnitTest, NullVirtualHost) {

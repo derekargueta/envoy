@@ -37,7 +37,7 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 // host header. This allows a single listener to service multiple top level domain path trees. Once
 // a virtual host is selected based on the domain, the routes are processed in order to see which
 // upstream cluster to route to or whether to perform a redirect.
-// [#next-free-field: 21]
+// [#next-free-field: 23]
 message VirtualHost {
   option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.route.VirtualHost";
 
@@ -186,6 +186,12 @@ message VirtualHost {
   // value of this and the listener per_connection_buffer_limit_bytes.
   google.protobuf.UInt32Value per_request_buffer_limit_bytes = 18;
 
+  // Specifies a list of HTTP query parameters that will be added to the HTTP path.
+  map<string, string> query_params_to_add = 21;
+
+  // Specifies a list of HTTP query parameters that will be removed from the HTTP path.
+  repeated string query_params_to_remove = 22;
+
   map<string, google.protobuf.Struct> hidden_envoy_deprecated_per_filter_config = 12
       [deprecated = true, (envoy.annotations.deprecated_at_minor_version) = "3.0"];
 }
@@ -204,7 +210,7 @@ message FilterAction {
 //
 //   Envoy supports routing on HTTP method via :ref:`header matching
 //   <envoy_v3_api_msg_config.route.v3.HeaderMatcher>`.
-// [#next-free-field: 19]
+// [#next-free-field: 21]
 message Route {
   option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.route.Route";
 
@@ -300,6 +306,12 @@ message Route {
   // If set, the bytes actually buffered will be the minimum value of this and the
   // listener per_connection_buffer_limit_bytes.
   google.protobuf.UInt32Value per_request_buffer_limit_bytes = 16;
+
+  // Specifies a list of HTTP query parameters that will be added to the HTTP path.
+  map<string, string> query_params_to_add = 19;
+
+  // Specifies a list of HTTP query parameters that will be removed from the HTTP path.
+  repeated string query_params_to_remove = 20;
 
   map<string, google.protobuf.Struct> hidden_envoy_deprecated_per_filter_config = 8
       [deprecated = true, (envoy.annotations.deprecated_at_minor_version) = "3.0"];

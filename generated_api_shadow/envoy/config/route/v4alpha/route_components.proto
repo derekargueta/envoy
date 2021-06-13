@@ -35,7 +35,7 @@ option (udpa.annotations.file_status).package_version_status = NEXT_MAJOR_VERSIO
 // host header. This allows a single listener to service multiple top level domain path trees. Once
 // a virtual host is selected based on the domain, the routes are processed in order to see which
 // upstream cluster to route to or whether to perform a redirect.
-// [#next-free-field: 21]
+// [#next-free-field: 23]
 message VirtualHost {
   option (udpa.annotations.versioning).previous_message_type = "envoy.config.route.v3.VirtualHost";
 
@@ -185,6 +185,12 @@ message VirtualHost {
   // If set and a route-specific limit is not set, the bytes actually buffered will be the minimum
   // value of this and the listener per_connection_buffer_limit_bytes.
   google.protobuf.UInt32Value per_request_buffer_limit_bytes = 18;
+
+  // Specifies a list of HTTP query parameters that will be added to the HTTP path.
+  map<string, string> query_params_to_add = 21;
+
+  // Specifies a list of HTTP query parameters that will be removed from the HTTP path.
+  repeated string query_params_to_remove = 22;
 }
 
 // A filter-defined action type.
@@ -201,7 +207,7 @@ message FilterAction {
 //
 //   Envoy supports routing on HTTP method via :ref:`header matching
 //   <envoy_v3_api_msg_config.route.v3.HeaderMatcher>`.
-// [#next-free-field: 19]
+// [#next-free-field: 21]
 message Route {
   option (udpa.annotations.versioning).previous_message_type = "envoy.config.route.v3.Route";
 
@@ -299,6 +305,12 @@ message Route {
   // If set, the bytes actually buffered will be the minimum value of this and the
   // listener per_connection_buffer_limit_bytes.
   google.protobuf.UInt32Value per_request_buffer_limit_bytes = 16;
+
+  // Specifies a list of HTTP query parameters that will be added to the HTTP path.
+  map<string, string> query_params_to_add = 19;
+
+  // Specifies a list of HTTP query parameters that will be removed from the HTTP path.
+  repeated string query_params_to_remove = 20;
 }
 
 // Compared to the :ref:`cluster <envoy_v3_api_field_config.route.v3.RouteAction.cluster>` field that specifies a

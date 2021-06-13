@@ -37,6 +37,7 @@ envoy_cc_library(
         ":header_formatter_lib",
         ":header_parser_lib",
         ":metadatamatchcriteria_lib",
+        ":query_params_parser_lib",
         ":reset_header_parser_lib",
         ":retry_state_lib",
         ":router_ratelimit_lib",
@@ -375,6 +376,16 @@ envoy_cc_library(
         "//source/common/protobuf:utility_lib",
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
     ],
+)
+
+envoy_cc_library(
+    name = "query_params_parser_lib",
+    srcs = ["query_params_parser.cc"],
+    hdrs = ["query_params_parser.h"],
+    deps = [
+        "//envoy/http:header_map_interface",
+        "//source/common/protobuf:utility_lib",
+    ]
 )
 
 envoy_cc_library(

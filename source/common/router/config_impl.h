@@ -27,6 +27,7 @@
 #include "source/common/router/header_formatter.h"
 #include "source/common/router/header_parser.h"
 #include "source/common/router/metadatamatchcriteria_impl.h"
+#include "source/common/router/query_params_parser.h"
 #include "source/common/router/router_ratelimit.h"
 #include "source/common/router/tls_context_match_criteria_impl.h"
 #include "source/common/stats/symbol_table_impl.h"
@@ -201,6 +202,7 @@ public:
   const ConfigImpl& globalRouteConfig() const { return global_route_config_; }
   const HeaderParser& requestHeaderParser() const { return *request_headers_parser_; }
   const HeaderParser& responseHeaderParser() const { return *response_headers_parser_; }
+  const QueryParamsParser& queryParamsParser() const { return *query_params_parser_; }
 
   // Router::VirtualHost
   const CorsPolicy* corsPolicy() const override { return cors_policy_.get(); }
@@ -269,6 +271,7 @@ private:
                                           // raw ref to the top level config is currently safe.
   HeaderParserPtr request_headers_parser_;
   HeaderParserPtr response_headers_parser_;
+  QueryParamsParserPtr query_params_parser_;
   PerFilterConfigs per_filter_configs_;
   uint32_t retry_shadow_buffer_limit_{std::numeric_limits<uint32_t>::max()};
   const bool include_attempt_count_in_request_;
@@ -862,6 +865,8 @@ private:
   std::vector<Http::HeaderUtility::HeaderDataPtr> config_headers_;
   std::vector<ConfigUtility::QueryParameterMatcherPtr> config_query_parameters_;
   std::vector<WeightedClusterEntrySharedPtr> weighted_clusters_;
+  std::vector<std::pair<std::string, std::string>> query_params_to_add_;
+  std::vector<std::string> query_params_to_remove_;
 
   UpgradeMap upgrade_map_;
   const uint64_t total_cluster_weight_;
@@ -870,6 +875,7 @@ private:
   TlsContextMatchCriteriaConstPtr tls_context_match_criteria_;
   HeaderParserPtr request_headers_parser_;
   HeaderParserPtr response_headers_parser_;
+  QueryParamsParserPtr query_params_parser_;
   uint32_t retry_shadow_buffer_limit_{std::numeric_limits<uint32_t>::max()};
   envoy::config::core::v3::Metadata metadata_;
   Envoy::Config::TypedMetadataImpl<HttpRouteTypedMetadataFactory> typed_metadata_;
@@ -1063,8 +1069,9 @@ public:
              Server::Configuration::ServerFactoryContext& factory_context,
              ProtobufMessage::ValidationVisitor& validator, bool validate_clusters_default);
 
-  const HeaderParser& requestHeaderParser() const { return *request_headers_parser_; };
-  const HeaderParser& responseHeaderParser() const { return *response_headers_parser_; };
+  const HeaderParser& requestHeaderParser() const { return *request_headers_parser_; }
+  const HeaderParser& responseHeaderParser() const { return *response_headers_parser_; }
+  const QueryParamsParser& queryParamsParser() const { return *query_params_parser_; }
 
   bool virtualHostExists(const Http::RequestHeaderMap& headers) const {
     return route_matcher_->findVirtualHost(headers) != nullptr;
@@ -1093,6 +1100,10 @@ public:
     return most_specific_header_mutations_wins_;
   }
 
+  bool mostSpecificRequestMutationsWins() const override {
+    return most_specific_request_mutations_wins_;
+  }
+
   uint32_t maxDirectResponseBodySizeBytes() const override {
     return max_direct_response_body_size_bytes_;
   }
@@ -1102,10 +1113,12 @@ private:
   std::list<Http::LowerCaseString> internal_only_headers_;
   HeaderParserPtr request_headers_parser_;
   HeaderParserPtr response_headers_parser_;
+  QueryParamsParserPtr query_params_parser_;
   const std::string name_;
   Stats::SymbolTable& symbol_table_;
   const bool uses_vhds_;
   const bool most_specific_header_mutations_wins_;
+  const bool most_specific_request_mutations_wins_;
   const uint32_t max_direct_response_body_size_bytes_;
 };
 
@@ -1132,6 +1145,7 @@ public:
   const std::string& name() const override { return name_; }
   bool usesVhds() const override { return false; }
   bool mostSpecificHeaderMutationsWins() const override { return false; }
+  bool mostSpecificRequestMutationsWins() const override { return false; }
   uint32_t maxDirectResponseBodySizeBytes() const override { return 0; }
 
 private:

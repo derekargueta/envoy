@@ -1179,6 +1179,13 @@ public:
   virtual bool mostSpecificHeaderMutationsWins() const PURE;
 
   /**
+   * @return bool whether most specific request mutations (for example, headers_to_add or
+   * query_params_to_remove) shuold take precedence. The default evaluation order is route level,
+   * then virtual host level and finally global connection manager level.
+   */
+  virtual bool mostSpecificRequestMutationsWins() const PURE;
+
+  /**
    * @return uint32_t The maximum bytes of the response direct response body size. The default value
    * is 4096.
    * TODO(dio): To allow overrides at different levels (e.g. per-route, virtual host, etc).
