@@ -691,9 +691,7 @@ google-apitools==0.5.32 \
 google-auth[aiohttp]==2.26.1 \
     --hash=sha256:2c8b55e3e564f298122a02ab7b97458ccfcc5617840beb5d0ac757ada92c9780 \
     --hash=sha256:54385acca5c0fbdda510cd8585ba6f3fcb06eeecf8a6ecca39d3ee148b092590
-    # via
-    #   google-auth
-    #   gsutil
+    # via gsutil
 google-reauth==0.1.1 \
     --hash=sha256:cb39074488d74c8853074dde47368bbf8f739d4a4338b89aab696c895b6d8368 \
     --hash=sha256:f9f6852a55c2c5453d581cd01f3d1278e86147c03d008409800390a834235892
@@ -1022,9 +1020,9 @@ pyflakes==3.2.0 \
     --hash=sha256:1c61603ff154621fb2a9172037d84dca3500def8c8b630657d1701f026f8af3f \
     --hash=sha256:84b5be138a2dfbb40689ca07e2152deb896a65c3a3e24c251c5c62489568074a
     # via flake8
-pygithub==2.1.1 \
-    --hash=sha256:4b528d5d6f35e991ea5fd3f942f58748f24938805cb7fcf24486546637917337 \
-    --hash=sha256:ecf12c2809c44147bce63b047b3d2e9dac8a41b63e90fcb263c703f64936b97c
+pygithub==2.3.0 \
+    --hash=sha256:0148d7347a1cdeed99af905077010aef81a4dad988b0ba51d4108bf66b443f7e \
+    --hash=sha256:65b499728be3ce7b0cd2cd760da3b32f0f4d7bc55e5e0677617f90f6564e793e
     # via -r requirements.in
 pygments==2.17.2 \
     --hash=sha256:b27c2826c47d0f3219f29554824c30c5e8945175d888647acd804ddd04af846c \
@@ -1038,7 +1036,6 @@ pyjwt[crypto]==2.8.0 \
     # via
     #   gidgethub
     #   pygithub
-    #   pyjwt
 pylsqpack==0.3.18 \
     --hash=sha256:005ddce84bdcbf5c3cf99f764504208e1aa0a91a8331bf47108f2708f2a315e6 \
     --hash=sha256:06e1bbe47514b83cd03158e5558ef8cc44f578169c1820098be9f3cc4137f16a \
@@ -1088,9 +1085,7 @@ pyreadline==2.1 \
 python-dateutil==2.8.2 \
     --hash=sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86 \
     --hash=sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9
-    # via
-    #   icalendar
-    #   pygithub
+    # via icalendar
 python-gnupg==0.5.2 \
     --hash=sha256:01d8013931c9fa3f45824bbea7054c03d6e11f258a72e7e086e168dbcb91854c \
     --hash=sha256:72ce142af6da7f07e433fef148b445fb3e07854acd2f88739008838745c0e9f5
