@@ -1775,6 +1775,46 @@ TEST(DurationUtilTest, OutOfRange) {
   }
 }
 
+// Sub-millisecond durations (nanos > 0 but < 1,000,000) should be rounded up to 1ms rather than
+// truncated to 0, which would be misinterpreted as "no timeout".
+TEST(DurationUtilTest, SubMillisecondRoundUp) {
+  {
+    // 1 nanosecond should round up to 1ms.
+    Protobuf::Duration duration;
+    duration.set_nanos(1);
+    EXPECT_EQ(1, DurationUtil::durationToMilliseconds(duration));
+  }
+  {
+    // 500 microseconds (500,000 nanos) should round up to 1ms.
+    Protobuf::Duration duration;
+    duration.set_nanos(500000);
+    EXPECT_EQ(1, DurationUtil::durationToMilliseconds(duration));
+  }
+  {
+    // 999,999 nanos (just under 1ms) should round up to 1ms.
+    Protobuf::Duration duration;
+    duration.set_nanos(999999);
+    EXPECT_EQ(1, DurationUtil::durationToMilliseconds(duration));
+  }
+  {
+    // Exactly 1ms should remain 1ms.
+    Protobuf::Duration duration;
+    duration.set_nanos(1000000);
+    EXPECT_EQ(1, DurationUtil::durationToMilliseconds(duration));
+  }
+  {
+    // Zero duration should remain 0 (zero means "no timeout", not "instant timeout").
+    Protobuf::Duration duration;
+    EXPECT_EQ(0, DurationUtil::durationToMilliseconds(duration));
+  }
+  {
+    // 1.5ms truncates to 1ms (protobuf truncates, not rounds — only the sub-ms clamp is needed).
+    Protobuf::Duration duration;
+    duration.set_nanos(1500000);
+    EXPECT_EQ(1, DurationUtil::durationToMilliseconds(duration));
+  }
+}
+
 TEST(DurationUtilTest, NoThrow) {
   {
     // In range test

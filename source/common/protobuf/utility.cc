@@ -772,7 +772,13 @@ Protobuf::Value ValueUtil::listValue(const std::vector<Protobuf::Value>& values)
 
 uint64_t DurationUtil::durationToMilliseconds(const Protobuf::Duration& duration) {
   validateDuration(duration);
-  return Protobuf::util::TimeUtil::DurationToMilliseconds(duration);
+  const uint64_t ms = Protobuf::util::TimeUtil::DurationToMilliseconds(duration);
+  // A non-zero duration that truncates to 0ms would be misinterpreted as "no timeout". Clamp to
+  // 1ms to preserve the intent of the caller.
+  if (ms == 0 && (duration.seconds() > 0 || duration.nanos() > 0)) {
+    return 1;
+  }
+  return ms;
 }
 
 absl::StatusOr<uint64_t>
@@ -781,7 +787,13 @@ DurationUtil::durationToMillisecondsNoThrow(const Protobuf::Duration& duration) 
   if (!result.ok()) {
     return result;
   }
-  return Protobuf::util::TimeUtil::DurationToMilliseconds(duration);
+  const uint64_t ms = Protobuf::util::TimeUtil::DurationToMilliseconds(duration);
+  // A non-zero duration that truncates to 0ms would be misinterpreted as "no timeout". Clamp to
+  // 1ms to preserve the intent of the caller.
+  if (ms == 0 && (duration.seconds() > 0 || duration.nanos() > 0)) {
+    return 1;
+  }
+  return ms;
 }
 
 uint64_t DurationUtil::durationToSeconds(const Protobuf::Duration& duration) {
