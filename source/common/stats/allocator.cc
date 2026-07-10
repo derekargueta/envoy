@@ -71,7 +71,7 @@ void Allocator::debugPrint() {
 template <class BaseClass> class StatsSharedImpl : public MetricImpl<BaseClass> {
 public:
   StatsSharedImpl(StatName name, Allocator& alloc, StatName tag_extracted_name,
-                  const StatNameTagVector& stat_name_tags)
+                  StatNameTagSpan stat_name_tags)
       : MetricImpl<BaseClass>(name, tag_extracted_name, stat_name_tags, alloc.symbolTable()),
         alloc_(alloc) {}
 
@@ -90,21 +90,16 @@ public:
   bool hidden() const override { return flags_ & Metric::Flags::Hidden; }
 
   // RefcountInterface
-  void incRefCount() override { ++ref_count_; }
+  void incRefCount() override { ref_count_.fetch_add(1, std::memory_order_relaxed); }
   bool decRefCount() override {
-    // We must, unfortunately, hold the allocator's lock when decrementing the
-    // refcount. Otherwise another thread may simultaneously try to allocate the
-    // same name'd stat after we decrement it, and we'll wind up with a
-    // dtor/update race. To avoid this we must hold the lock until the stat is
-    // removed from the map.
-    //
-    // It might be worth thinking about a race-free way to decrement ref-counts
-    // without a lock, for the case where ref_count > 2, and we don't need to
-    // destruct anything. But it seems preferable at to be conservative here,
-    // as stats will only go out of scope when a scope is destructed (during
-    // xDS) or during admin stats operations.
+    // See tryDecRefCountFastPath() in refcount_ptr.h for the interleaving
+    // analysis of the lock-free fast path.
+    if (tryDecRefCountFastPath(ref_count_)) {
+      return false;
+    }
+    // Another thread may call incRefCount at this point. The lock path still does the right thing
+    // because the stat is not freed if ref_count_ is not 0.
     Thread::LockGuard lock(alloc_.mutex_);
-    ASSERT(ref_count_ >= 1);
     if (--ref_count_ == 0) {
       alloc_.sync().syncPoint(Allocator::DecrementToZeroSyncPoint);
       removeFromSetLockHeld();
@@ -112,7 +107,7 @@ public:
     }
     return false;
   }
-  uint32_t use_count() const override { return ref_count_; }
+  uint32_t use_count() const override { return ref_count_.load(std::memory_order_relaxed); }
 
   /**
    * We must atomically remove the counter/gauges from the allocator's sets when
@@ -130,9 +125,10 @@ protected:
   // but these are always in transition to ref-count 2 or higher, and thus
   // cannot race with a decrement to zero.
   //
-  // However, we must hold alloc_.mutex_ when decrementing ref_count_ so that
-  // when it hits zero we can atomically remove it from alloc_.counters_ or
-  // alloc_.gauges_. We leave it atomic to avoid taking the lock on increment.
+  // Non-final decrements also avoid the lock, using a CAS loop that can never
+  // reach zero. However, we must hold alloc_.mutex_ for a decrement that may
+  // hit zero, so that we can atomically remove the stat from alloc_.counters_
+  // or alloc_.gauges_; see decRefCount().
   std::atomic<uint32_t> ref_count_{0};
 
   std::atomic<uint16_t> flags_{0};
@@ -141,7 +137,7 @@ protected:
 class CounterImpl : public StatsSharedImpl<Counter> {
 public:
   CounterImpl(StatName name, Allocator& alloc, StatName tag_extracted_name,
-              const StatNameTagVector& stat_name_tags)
+              StatNameTagSpan stat_name_tags)
       : StatsSharedImpl(name, alloc, tag_extracted_name, stat_name_tags) {}
 
   void removeFromSetLockHeld() ABSL_EXCLUSIVE_LOCKS_REQUIRED(alloc_.mutex_) override {
@@ -171,7 +167,7 @@ private:
 class GaugeImpl : public StatsSharedImpl<Gauge> {
 public:
   GaugeImpl(StatName name, Allocator& alloc, StatName tag_extracted_name,
-            const StatNameTagVector& stat_name_tags, ImportMode import_mode)
+            StatNameTagSpan stat_name_tags, ImportMode import_mode)
       : StatsSharedImpl(name, alloc, tag_extracted_name, stat_name_tags) {
     switch (import_mode) {
     case ImportMode::Accumulate:
@@ -272,7 +268,7 @@ private:
 class TextReadoutImpl : public StatsSharedImpl<TextReadout> {
 public:
   TextReadoutImpl(StatName name, Allocator& alloc, StatName tag_extracted_name,
-                  const StatNameTagVector& stat_name_tags)
+                  StatNameTagSpan stat_name_tags)
       : StatsSharedImpl(name, alloc, tag_extracted_name, stat_name_tags) {}
 
   void removeFromSetLockHeld() ABSL_EXCLUSIVE_LOCKS_REQUIRED(alloc_.mutex_) override {
@@ -299,7 +295,7 @@ private:
 };
 
 CounterSharedPtr Allocator::makeCounter(StatName name, StatName tag_extracted_name,
-                                        const StatNameTagVector& stat_name_tags) {
+                                        StatNameTagSpan stat_name_tags) {
   Thread::LockGuard lock(mutex_);
   ASSERT(gauges_.find(name) == gauges_.end());
   ASSERT(text_readouts_.find(name) == text_readouts_.end());
@@ -318,8 +314,7 @@ CounterSharedPtr Allocator::makeCounter(StatName name, StatName tag_extracted_na
 }
 
 GaugeSharedPtr Allocator::makeGauge(StatName name, StatName tag_extracted_name,
-                                    const StatNameTagVector& stat_name_tags,
-                                    Gauge::ImportMode import_mode) {
+                                    StatNameTagSpan stat_name_tags, Gauge::ImportMode import_mode) {
   Thread::LockGuard lock(mutex_);
   ASSERT(counters_.find(name) == counters_.end());
   ASSERT(text_readouts_.find(name) == text_readouts_.end());
@@ -339,7 +334,7 @@ GaugeSharedPtr Allocator::makeGauge(StatName name, StatName tag_extracted_name,
 }
 
 TextReadoutSharedPtr Allocator::makeTextReadout(StatName name, StatName tag_extracted_name,
-                                                const StatNameTagVector& stat_name_tags) {
+                                                StatNameTagSpan stat_name_tags) {
   Thread::LockGuard lock(mutex_);
   ASSERT(counters_.find(name) == counters_.end());
   ASSERT(gauges_.find(name) == gauges_.end());
@@ -367,7 +362,7 @@ bool Allocator::isMutexLockedForTest() {
 }
 
 Counter* Allocator::makeCounterInternal(StatName name, StatName tag_extracted_name,
-                                        const StatNameTagVector& stat_name_tags) {
+                                        StatNameTagSpan stat_name_tags) {
   return new CounterImpl(name, *this, tag_extracted_name, stat_name_tags);
 }
 

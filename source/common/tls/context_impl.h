@@ -53,7 +53,7 @@ struct TlsContext {
   // for "not an ECDSA context".
   CurveNID ec_group_curve_name_ = EC_CURVE_INVALID_NID;
   bool is_must_staple_{};
-  Ssl::PrivateKeyMethodProviderSharedPtr private_key_method_provider_{};
+  Ssl::PrivateKeyMethodProviderSharedPtr private_key_method_provider_;
 
 #ifdef ENVOY_ENABLE_QUIC
   quiche::QuicheReferenceCountedPointer<quic::ProofSource::Chain> quic_cert_;
@@ -102,10 +102,10 @@ public:
 
   static int sslSocketIndex();
   // Ssl::Context
-  absl::optional<uint32_t> daysUntilFirstCertExpires() const override;
+  std::optional<uint32_t> daysUntilFirstCertExpires() const override;
   Envoy::Ssl::CertificateDetailsPtr getCaCertInformation() const override;
   std::vector<Envoy::Ssl::CertificateDetailsPtr> getCertChainInformation() const override;
-  absl::optional<uint64_t> secondsUntilFirstOcspResponseExpires() const override;
+  std::optional<uint64_t> secondsUntilFirstOcspResponseExpires() const override;
 
   std::vector<Ssl::PrivateKeyMethodProviderSharedPtr> getPrivateKeyMethodProviders();
 
@@ -117,6 +117,13 @@ public:
       const std::string& host_name);
 
   static void keylogCallback(const SSL* ssl, const char* line);
+
+  // Apply the configured local/remote IP-list filters and, if they match,
+  // write a single NSS Key Log line. Shared by the TCP TLS key log callback
+  // and by the QUIC TLS key log callback in EnvoyTlsServerHandshaker. The
+  // call is a no-op when no key log file has been opened.
+  void maybeWriteKeyLog(const char* line, const Network::Address::Instance* local_addr,
+                        const Network::Address::Instance* remote_addr) const;
 
 protected:
   friend class ContextImplPeer;
@@ -149,6 +156,8 @@ protected:
       const Network::TransportSocketOptionsConstSharedPtr& transport_socket_options, SSL* ssl);
 
   void populateServerNamesMap(Ssl::TlsContext& ctx, const int pkey_id);
+
+  absl::Status setCompliancePolicy(enum ssl_compliance_policy_t policy);
 
   // This is always non-empty, with the first context used for all new SSL
   // objects. For server contexts, once we have ClientHello, we

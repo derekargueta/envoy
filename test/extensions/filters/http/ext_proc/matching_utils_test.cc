@@ -2,7 +2,6 @@
 #include "source/extensions/filters/common/expr/evaluator.h"
 #include "source/extensions/filters/http/ext_proc/matching_utils.h"
 
-#include "test/mocks/local_info/mocks.h"
 #include "test/mocks/server/server_factory_context.h"
 #include "test/mocks/stream_info/mocks.h"
 #include "test/test_common/utility.h"
@@ -29,8 +28,10 @@ protected:
     auto builder = Filters::Common::Expr::getBuilder(context_);
     Protobuf::RepeatedPtrField<std::string> request_matchers;
     Protobuf::RepeatedPtrField<std::string> response_matchers;
-    expression_manager_ = std::make_unique<ExpressionManager>(builder, context_.local_info_,
-                                                              request_matchers, response_matchers);
+    absl::Status creation_status = absl::OkStatus();
+    expression_manager_ = std::make_unique<ExpressionManager>(
+        builder, context_.local_info_, request_matchers, response_matchers, creation_status);
+    EXPECT_TRUE(creation_status.ok());
   }
 
   NiceMock<Server::Configuration::MockServerFactoryContext> context_;
@@ -46,21 +47,30 @@ TEST_F(ExpressionManagerTest, InvalidExpression) {
   Protobuf::RepeatedPtrField<std::string> request_matchers;
   request_matchers.Add("undefined_func()");
   auto builder = Filters::Common::Expr::getBuilder(context_);
-  EXPECT_THROW(
-      { ExpressionManager test_manager(builder, context_.local_info_, request_matchers, {}); },
-      EnvoyException);
+  absl::Status creation_status = absl::OkStatus();
+  ExpressionManager test_manager(builder, context_.local_info_, request_matchers, {},
+                                 creation_status);
+  EXPECT_FALSE(creation_status.ok());
 }
 
-TEST_F(ExpressionManagerTest, ComplexExpressionWithSourceInfo) {
-  // Create a complex expression that would test source info handling
+TEST_F(ExpressionManagerTest, RepeatedMatchers) {
   Protobuf::RepeatedPtrField<std::string> request_matchers;
-  request_matchers.Add("request.headers.contains('x-test') && "
-                       "request.headers['x-test'].startsWith('value')");
-
-  // This should create successfully without throwing
+  request_matchers.Add("true");
+  request_matchers.Add("true");
   auto builder = Filters::Common::Expr::getBuilder(context_);
-  ExpressionManager test_manager(builder, context_.local_info_, request_matchers, {});
+  absl::Status creation_status = absl::OkStatus();
+  ExpressionManager test_manager(builder, context_.local_info_, request_matchers, {},
+                                 creation_status);
+  ASSERT_TRUE(creation_status.ok());
   EXPECT_TRUE(test_manager.hasRequestExpr());
+}
+
+TEST_F(ExpressionManagerTest, EvaluateAttributesEmpty) {
+  NiceMock<StreamInfo::MockStreamInfo> stream_info;
+  auto activation = Filters::Common::Expr::createActivation(&context_.local_info_, stream_info,
+                                                            nullptr, nullptr, nullptr);
+  auto result = ExpressionManager::evaluateAttributes(*activation, {});
+  EXPECT_TRUE(result.fields().empty());
 }
 
 #else
@@ -72,7 +82,8 @@ TEST(ExpressionManagerTest, CelUnavailableTest) {
   request_matchers.Add("true");
 
   // When CEL is not available, this should log a warning but not throw
-  ExpressionManager manager(builder, context.local_info_, request_matchers, {});
+  absl::Status creation_status = absl::OkStatus();
+  ExpressionManager manager(builder, context.local_info_, request_matchers, {}, creation_status);
   EXPECT_FALSE(manager.hasRequestExpr());
 }
 
